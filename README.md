@@ -8,8 +8,8 @@ library(devtools)
 devtools::install_github('polehalieutique/formationIMROP')
 ```
 
-# Contenu du package
-
+# Contenu du package.
+ 
 Ce package va permettre de diffuser des jeux de données qui seront utilisés lors de la formation
 
 
