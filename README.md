@@ -1,6 +1,6 @@
 # formationIMTOP
 
-Ce package va regrouper differentes informations qui seront utilisées lors de la formation réalisée à l'Institut Mautitanien de Recherche Océanographique et des Pêches (IMROP) en Octobre 2024
+Ce package va regrouper differentes informations qui seront utilisées lors de la formation réalisée à l'Institut Mautitanien de Recherche Océanographique et des Pêches (IMROP) en Octobre 2024.
 
 ```
 library(devtools)
