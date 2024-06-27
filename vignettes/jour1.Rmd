@@ -279,6 +279,24 @@ logbook.zr4n %>%
 
 ```
 
+
+
+```{r}
+
+TOT<-logbook.dta %>% 
+  group_by(secteur,codesp) %>% summarise(total=sum(poids))
+
+logbook.zr4n %>% 
+  inner_join(TOT,by='secteur') %>% 
+  st_centroid() %>%  #Transorme l'object géographique de polygon à point (positionné au centre du polygone)
+  ggplot()+
+  geom_sf(data=logbook.zr4n)+
+  geom_sf(aes(size=total),color='orange')+
+  scale_fill_continuous( trans = "reverse")+
+  facet_wrap(~codesp)
+
+```
+
 ## Données maturité
 
 Utilisation de mutate pour faire des classes de taille. On cree une nouvelle colonne avec les données d'une (ou de plusieurs) autre. 
