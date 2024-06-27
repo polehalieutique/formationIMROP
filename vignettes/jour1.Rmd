@@ -310,6 +310,77 @@ maturite.dta %>% mutate(lt=10*floor(lt/100),classe_taille=paste(lt,'-',lt+10,sep
 ```
 ### Obtenir un tableau croisé
 
-On voudrait obtenir un tableau qui corresponde schématiquement au graphique précedent qui permette de compar
+On voudrait obtenir un tableau qui corresponde schématiquement au graphique précedent qui permette de comparer les classes de taille ports par ports. 
+
+Donc avoir un tableau ou les noms des ports apparaissent comme des colonnes, la classe de taille en ligne et le pourcentage d'individus comme valeur du tableau. 
+
+Pour cela on utilise la fonction pivot_wider qui permet de croiser un tableau (pivot_longer est la fonction qui permet de décroiser un tableau). 
+Cette fonction fait partie du package tidyr (donc chargement de ce package avec library(tidyr) et si vous ne l'avez pas déjà installé, un install.packages("tidyr") en amont)
+
+pivot_wider() avec les paramètres
+* names_from nom du champ du tableau que l'on va passer en colonne
+* values_from nom du champ qui contient les valeurs à metre dans le tablea
+
+```{r}
+library(tidyr)
+
+maturite.dta %>% mutate(lt=10*floor(lt/100),classe_taille=paste(lt,'-',lt+10,sep='')) %>% #Passage des longueur en classe de taille de 10 cm ( lt=20)
+  group_by(nom,classe_taille,lt) %>% summarise(nb.individus=n()) %>% 
+  inner_join(nb.indiv.strate,by='nom') %>% 
+  arrange(lt) %>% #Permet d'ordonner les classes de taille
+  mutate(pct=round(100*nb.individus/nb.individus.strate,2)) %>% #Et là on rajoute
+  select(nom,classe_taille,pct,lt) %>% 
+  pivot_wider(names_from=nom,values_from=pct) %>% 
+  kbl() %>%  kable_paper(c("striped", "hover"))
+
+
+```
+
+
+## Données Tailles poids
+
+Je vais considérer la maturité des individus sur leur taille. Je vais prendre une taille de 46 comme taille de maturité. 
+Je crée une nouvelle variable maturité qui dépend de la longueur. 
+Quand la longueur est inférieure à 460 mm je considère que le poisson est immature et si c'est supérieur ou égal à 460mm, je le condière comme Mature. 
+
+on utilise la fonction case_when qui prend en paramètre une série de condition et la valeur selon ces conditions. 
+case_when (condition1 alors (~) valeur1,
+            condition2 alors (~) valeur2,
+            TRUE  alors (~) valeur_autres #Cette dernière ligne correspond aux données qui ne correspondent pas aux conditions 1 et 2
+            )
+
+```{r}
+taille_poids.dta %>% mutate(maturite=case_when(lt<460 ~ 'Immature',lt>=460 ~'Mature')) 
+```
+
+Le camembert est un histogramme avec des coordonnées polaire. Donc pour faire un camembert, on commence par faire un histogramme et on rajoute la fonction   coord_polar("y",start=0)
+
+```{r}
+
+nb.indiv.strate<-taille_poids.dta %>% group_by(nom) %>% summarize(nb.individus.strate=n())
+
+taille_poids.dta %>% mutate(maturite=case_when(lt<460 ~ 'Immature',lt>=460 ~'Mature')) %>% 
+  group_by(nom,maturite) %>% summarize(nb.individus=n()) %>% 
+  inner_join(nb.indiv.strate,by='nom') %>% 
+  mutate(pct=round(100*nb.individus/nb.individus.strate,2)) %>% 
+  ggplot()+geom_histogram(aes(x="",y=pct,fill=maturite),width = 1, stat = "identity")+
+  facet_wrap(~nom)
+
+
+taille_poids.dta %>% mutate(maturite=case_when(lt<460 ~ 'Immature',lt>=460 ~'Mature')) %>% 
+  group_by(nom,maturite) %>% summarize(nb.individus=n()) %>% 
+  inner_join(nb.indiv.strate,by='nom') %>% 
+  mutate(pct=round(100*nb.individus/nb.individus.strate,2)) %>% 
+  ggplot()+geom_histogram(aes(x="",y=pct,fill=maturite),width = 1, stat = "identity")+
+  coord_polar("y",start=0)+
+  facet_wrap(~nom)
+
+
+
+```
+
+
+
+
 
 
