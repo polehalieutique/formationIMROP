@@ -1,0 +1,172 @@
+---
+title: "Day 1 Pablo"
+author: "Pablo Brosset"
+date: "2024-06-26"
+output:
+  html_document: default
+  pdf_document: default
+vignette: >
+  %\VignetteIndexEntry{jour1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+```
+
+# Chargement des librairies
+
+```{r setup}
+
+
+library(dplyr) #Package de manipulation de données
+library(ggplot2) # Package pour faire des graphiques
+library(sf) # Package pour faire des cartes
+library(knitr) # Package pour présenter des tableaux
+library(kableExtra) # Package pour présenter des tableaux
+library(formationIMROP) # Package spécifique à la formation
+
+
+```
+
+
+# Chargement des données
+
+```{r}
+data("taille_poids.dta") # Vient du package formationIMROP
+
+head(taille_poids.dta,n=10) #Affichage des n premières lignes du tableau 
+```
+
+# Premiers calculs des descripteurs principaux des données
+
+Ici le but va être de calculer les descripteurs de notre jeu de données. Nous allons nous intéresser au calcul de la moyenne, de la variance et des quantiles. Ceci est fait à partir de fonctions disponibles dans la version de base de R : mean(), var() et quantiles().
+
+
+## Calcul de la moyenne
+
+Nous allons calculer sur la taille moyenne des individus capturés dans les différents ports de débarquement pour voir s'il existent des différences géographiques. Si je traduit cela en langage R/dplyr je pars du jeux de données, je regroupe sur le champs 'nom' (Les ports) et je crée un nouveau champ qui va résumer les taille moyenne (faire la moyenne) suivant la strate 'nom'.
+
+```{r}
+taille_poids.dta %>% group_by(nom) %>% summarise(Taille_moyenne=mean(lt))
+```
+
+Attention, il y'a des NA dans la taille des individus pour Saloum, donc penser à mettre na.rm=TRUE (on enlève les NA du calcul).
+
+```{r}
+taille_poids.dta %>% group_by(nom) %>% summarise(Taille_moyenne=mean(lt,na.rm=T))
+```
+
+Si je veux le faire pour les différentes années, je rajoute la strate 'annee'.
+
+```{r}
+taille_poids.dta %>% group_by(nom, annee) %>% summarise(Taille_moyenne=mean(lt,na.rm=T))
+```
+
+Cela permet de s'apercevoir qu'il n'y a pas de données disponibles pour Nouakchott en 2019 et 2021 et pour Nouadhibou en 2021.
+On voit ainsi que les individus débarqués au Sénégal semblent plus petits (et ce pour toutes les années).
+
+
+
+## Calcul de l'écart type
+
+Nous allons calculer l'écart type en suivant la même procédure que pour la taille moyenne des individus capturés dans les différents ports de débarquement. Regarder l'écart type va permettre de déterminer si la taille des individus débarqués est plus ou moins hétérogène. La fonction est sd(). Attention, il y'a des NA dans la taille des individus pour Saloum, donc penser à mettre na.rm=TRUE (on enlève les NA du calcul).
+
+```{r}
+taille_poids.dta %>% group_by(nom) %>% summarise(Variance=sd(lt,na.rm=T))
+```
+
+Si je veux le faire pour les différentes années, je rajoute la strate 'annee'.
+
+```{r}
+taille_poids.dta %>% group_by(nom, annee) %>% summarise(Variance=sd(lt,na.rm=T))
+```
+
+Cela permet de s'apercevoir par exemple que les tailles des individus débarqués à Saloum sont plus variables qu'ailleurs. On a vu plus haut que en moyenne les individus sont plus petits qu'ailleurs, mais l'écart-type nous indique qu'il y'a aussi parfois des très gros.
+
+## Calcul des quantiles
+
+Les quantiles permettent de comprendre comment les données sont réparties. Ici en prenant le quantile 10% et le quantile 90% des tailles, on peut avoir les tailles pourlesquelles 10% (ou 90%) des individus ont une tailles inférieures. Vous pouvez aussi calculer le quantile 50% qui revient à calculer la médiane. 
+
+```{r}
+taille_poids.dta %>% group_by(nom) %>% summarise(Q10_taille=quantile(lt, probs = c(0.1), na.rm = T),
+                                                 Q90_taille=quantile(lt, probs = c(0.9), na.rm = T))
+```
+
+
+# Statistiques pour comparer la moyenne de différents groupe
+
+Calculer des moyennes ne suffit pas pour savoir si l'on peut dire que nos groupes sont significativement différents, cela doit être vérifié à l'aide de tests statistiques. S'il y'a 3 groupes ou plus, cette comparaison de moyenne peut se faire à l'aide d'une ANOVA. La fonction aov() sera utilisée à cette fin. [avec 2 groupes, vous pouvez faire un test de student].
+
+```{r}
+taille_poids.dta  %>% aov(lt ~ nom,data = .) %>% summary()
+```
+
+On a ici la confirmation qu'il y'a des différences entre groupes, mais entre quels groupes exactement. Pour savoir il faut faire des tests post-hoc (par exemple ici le test de Tukey)
+
+```{r}
+taille_poids.dta  %>% aov(lt ~ nom,data = .)%>% TukeyHSD()
+```
+
+On peut représenter graphiquement les résultats comme suit
+```{r}
+ggplot(taille_poids.dta, aes(x = nom, y = lt, fill=nom)) +
+  geom_boxplot() +
+  labs(title = "Longueur par port de débarquement",
+       x = "Port/Zone",
+       y = "LT (mm)") +
+  theme_minimal()
+```
+
+# Calcul d'indices très utiles en halieutique
+
+Calcul de l'indice de condition corporelle de Le Cren, qui permet d'estimer l'état de santé d'un individu. Si la valeur est au dessus de 1, l'individu est considéré comme en meilleure santé qu'un individu avec une valeur inférieure à 1.
+
+```{r}
+# Effectuer une analyse de régression pour trouver les paramètres a et b
+fit <- lm(log(pt) ~ log(lt), data = taille_poids.dta)
+coefficients <- coef(fit)
+a <- exp(coefficients[1])
+b <- coefficients[2]
+
+# Ajouter les paramètres de la régression dans le jeu de données
+taille_poids.dta <- taille_poids.dta %>%
+  mutate(
+    expected_weight = a * lt^b,
+    K_R = pt / expected_weight
+  )
+
+# Créer un graphique de l'indice de condition en fonction du port
+ggplot(taille_poids.dta, aes(x = nom, y = K_R, fill=nom)) +
+  geom_boxplot() +
+  labs(title = "Indice de condition de Le Cren en fonction du port de débarque",
+       x = "Port",
+       y = "Indice de condition de Le Cren (K_R)") +
+  theme_minimal()
+
+```
+
+On voit qu'il y'a beaucoup d'outliers, on va donc sélectionner les valeurs entre 0.5 et 1.5 dans la colonne K_R (indice de condition)
+
+```{r}
+taille_poids.dta %>%
+  filter(K_R > 0.5 & K_R< 1.5)  %>%
+  ggplot(., aes(x = nom, y = K_R, fill=nom)) +
+  geom_boxplot() +
+  scale_y_continuous(limits=c(0.5,1.5))+
+  labs(title = "Indice de condition de Le Cren en fonction du port de débarque",
+       x = "Port",
+       y = "Indice de condition de Le Cren (K_R)") +
+  theme_minimal()
+
+taille_poids.dta  %>% filter(K_R > 0.5 & K_R< 1.5)  %>% aov(K_R~ nom,data = .) %>% summary()
+
+taille_poids.dta  %>% filter(K_R > 0.5 & K_R< 1.5)  %>% aov(K_R~ nom,data = .)%>% TukeyHSD()
+```
+
+Il semblerait que les poissons débarqués à Saloum soit en moins bonne condition (moins de réserves énergétique et donc en moins bonne santé).
