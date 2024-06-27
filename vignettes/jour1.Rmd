@@ -1,0 +1,315 @@
+---
+title: "jour1"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{jour1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+```
+
+# Chargement des librairies
+
+```{r setup}
+
+
+library(dplyr) #Package de manipulation de données
+library(ggplot2) # Package pour faire des graphiques
+library(sf) # Package pour faire des cartes
+library(knitr) # Package pour présenter des tableaux
+library(kableExtra) # Package pour présenter des tableaux
+
+library(formationIMROP) # Package spécifique à la formation
+
+
+```
+
+
+# Fouille de données maturité
+
+## Affichage d'un tableau
+
+```{r}
+data("maturite.dta") # Vient du package formationIMROP
+
+head(maturite.dta,n=10) #Affichage des n premières lignes du tableau 
+
+kbl(head(maturite.dta)) %>%
+  kable_styling()
+
+
+ kbl(head(maturite.dta)) %>%
+  kable_minimal()
+ 
+ kbl(head(maturite.dta)) %>%
+ kable_paper(c("striped", "hover"))
+
+```
+
+## Jouer avec les données 
+
+C'est le package dplyr qui apporte à R les fonctions de traitement des données. 
+La syntaxe est proche de la syntaxe des langage d'interrogation des bases de données (SQL). 
+
+group_by () va permettre de regrouper les données sur les critères que l'on désire. Il va permettre de réaliser des tableau aggrégés qui correspondent aux type de questions suivantes : Faite la somme des captures par engins
+
+summarize () suit toujours le group_by et permet de préciser l'opération à faire une fois que les données sont regroupées 
+
+mutate() permet d'ajouter une colonne dont le contenu est fonction d'autres colonnes
+
+filter() permet de filter les données 
+
+innner_join() Permet de lier 2 data frame suur la base d'une ou plusieurs informations communes
+
+
+```{r}
+data("logbook.dta") # Données logbook pour Sardine et Sardinelles
+data("logbook.zr2n") # Réferentiel des codes espèces
+
+```
+
+
+Cacul de la somme des captures déclarées par espèces et par années
+
+```{r}
+
+dim(logbook.dta)
+
+kbl(head(logbook.dta)) %>%
+ kable_paper(c("striped", "hover"))
+
+```
+La table des logbooks contient 48 000 ligne et 18 colonnes. La question indique que nous voulons en résultat un tableau avec les colonnes année (an) espece (codesp) et la somme des captures (poids). Dit autrement je veux regrouper toutes les lignes qui ont les mêmes valeurs pour an et codesp et calculer la somme des poids sur ces regoupements. 
+
+Si je traduit cela en langage R/dplyr je pars du jeux de données, je regoupe sur les 2 champs an et codesp et je crée un nouveau champ qui va résumer les captures (faire la somme) sur ces 2 strates
+
+```{r}
+logbook.dta %>% group_by(an,codesp) %>% summarise(total=sum(poids))
+
+```
+
+Je garde un tableau de 46 lignes. Sous excel on aurait fait un tableau croisé. 
+
+Si je ne veux regarder que les captures des Navires Hollandais, je vais filtrer pour ne faire le calcul que sur les lignes où le champ nation est égal à 'NLD'
+
+```{r}
+logbook.dta %>% filter(nation=='NLD') %>% 
+  group_by(an,codesp) %>% summarise(total=sum(poids))
+
+```
+Si je veux rajouter une dimension à mon tableau, je rajoute dans le group_by
+Exemple somme des captures par pavillon,  par an et especes
+
+```{r}
+
+logbook.dta %>% 
+  group_by(an,codesp,nation) %>% summarise(total=sum(poids))
+
+```
+
+
+Les codesp ne sont pas très parlant, j'aimerais avoir le même tableau avec le nom de l'espèce. 
+Le referentiel codesp / Nom literal est inclu dans le tableau logbook.zr2n
+
+```{r}
+
+head(logbook.zr2n)
+
+logbook.zr2n %>% filter(codesp %in% c(10119,10120)) # n'avoir le tableau que pour les lignes qui m'interessent
+
+
+logbook.zr2n %>% filter(codesp %in% unique(logbook.dta$codesp)) #Je ne veux pas indiquer les codes qui m'interessent mais qu'il aille directement les chercher dans le tableau
+
+unique(logbook.dta$codesp) #Renvoie un vecteur des valeurs uniques de la colonne codesp du tableau logbook.dta
+
+```
+J'aimerais donc avoir la somme des captures par an et espece et en plus avoir les information sur les noms de mes espèces depuis mon tableau zr2n. 
+Je veux donc joindre les 2 tableaux quand le codesp correspond
+
+```{r}
+
+logbook.dta %>% 
+  group_by(an,codesp) %>% summarise(total=sum(poids)) %>% 
+  inner_join(logbook.zr2n,by=c('codesp'))
+
+
+```
+Donc a pas de lignes supplémentaires mais juste des colonnes additionelles qui ont été ajoutées sur la base de la correpondance entre les valeurs contenues dans la colonne codeesp
+
+# Faire des graphiques
+
+## Données logbooks
+
+```{r}
+
+logbook.dta %>% 
+  group_by(an,codesp) %>% summarise(total=sum(poids)) %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  ggplot()+geom_bar(aes(x=an,y=total,fill=nomespco),stat='identity')
+  
+
+
+
+logbook.dta %>% 
+  group_by(an,codesp) %>% summarise(total=sum(poids)) %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  ggplot()+geom_histogram(aes(x=an,y=total,fill=nomespco),stat='identity',position="dodge")
+  
+
+logbook.dta %>% 
+  group_by(an,codesp) %>% summarise(total=sum(poids)) %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  ggplot()+geom_line(aes(x=an,y=total,color=nomespco),stat='identity')+
+  ggtitle("Captures des 2 espèces")
+
+```
+
+```{r}
+
+logbook.dta %>% 
+  group_by(an,nation,codesp) %>% summarise(total=sum(poids)) %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  ggplot()+
+  geom_histogram(aes(x=an,y=total,fill=nation),stat='identity')
+
+
+# Par défaut, ggplot prend déjà des opérations par defaut
+ggplot(logbook.dta)+
+  geom_histogram(aes(x=an,y=poids,fill=nation),stat='identity')
+
+
+
+logbook.dta %>% 
+  group_by(an,nation,codesp) %>% summarise(total=sum(poids)) %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  ggplot()+
+  geom_histogram(aes(x=an,y=total,fill=nation),stat='identity')+
+  facet_wrap(~nomespco)
+
+
+```
+
+
+```{r}
+
+logbook.dta %>% filter(nation=='NLD') %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  ggplot()+
+  geom_boxplot(aes(x=as.factor(an),y=poids,fill=nomespco))
+
+
+logbook.dta %>% filter(nation=='NLD') %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  ggplot()+
+  geom_boxplot(aes(x=as.factor(an),y=poids,fill=nomespco))+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+
+```
+
+## Graphe ou carte, même principe
+
+Je veux la somme des captures par secteur et mettre cela sur une carte
+Le dessin des secteur est dans l'objet logbook.zr4n (l'équivalent du shapefile)
+
+```{r}
+data(logbook.zr4n)
+
+
+ggplot(logbook.zr4n)+
+  geom_sf()
+
+```
+
+```{r}
+
+TOT<-logbook.dta %>% 
+  group_by(secteur,codesp) %>% summarise(total=sum(poids))
+
+logbook.zr4n %>% 
+  inner_join(TOT,by='secteur') %>% 
+  ggplot()+
+  geom_sf(aes(fill=total))+
+  scale_fill_continuous( trans = "reverse")+
+  facet_wrap(~codesp)
+
+logbook.zr4n %>% 
+  inner_join(TOT,by='secteur') %>% 
+  ggplot()+
+  geom_sf(aes(fill=total))+
+  scale_fill_distiller( palette = "Spectral")+
+  facet_wrap(~codesp)
+
+
+TOT<-logbook.dta %>% filter(codesp=='10119') %>% 
+  group_by(secteur,an) %>% summarise(total=sum(poids))
+
+
+
+logbook.zr4n %>% 
+  inner_join(TOT,by='secteur') %>% 
+  ggplot()+
+  geom_sf(aes(fill=total))+
+  scale_fill_distiller( palette = "Spectral")+
+  facet_wrap(~an)+
+  ggtitle("Rapartition des captures annuelles pour 10119")
+
+
+
+TOT<-logbook.dta %>% filter(codesp=='10120') %>% 
+  group_by(secteur,an) %>% summarise(total=sum(poids))
+
+
+
+logbook.zr4n %>% 
+  inner_join(TOT,by='secteur') %>% 
+  ggplot()+
+  geom_sf(aes(fill=total))+
+  scale_fill_distiller( palette = "Spectral")+
+  facet_wrap(~an)+
+  ggtitle("Rapartition des captures annuelles pour 10120")
+
+```
+
+## Données maturité
+
+Utilisation de mutate pour faire des classes de taille. On cree une nouvelle colonne avec les données d'une (ou de plusieurs) autre. 
+n() permet de compter le nombre de ligne (ou d'individus). 
+
+```{r}
+
+maturite.dta %>% mutate(lt=10*floor(lt/100),classe_taille=paste(lt,'-',lt+10,sep='')) %>% #Passage des longueur en classe de taille de 10 cm ( lt=20)
+  group_by(nom,classe_taille) %>% summarise(nb_individu=n()) %>% 
+  ggplot()+ geom_bar(aes(x=classe_taille,y=nb_individu,fill=nom),stat='identity',position='dodge')
+
+```
+Mais là on a le nombre d'individus, qui est lié aussi à l'effort d'échantillonnage. On aimerait avoir plutôt un pourcentage d'uindividus par classes de taille pour pouvoir comparer les différents points d'échantillonage indépendamment de l'effort d'échantillonage. 
+
+L'idée est donc d'avoir un pourcentage de la classe de taille dans la strate (ici point de débarquement). C'est donc le nombre d'individus dans la strate de la classe de taille X divisé par le nombre d'individus de la strate.
+
+On commence par calculé le nombre d'individus par point de débarquement et je stocke l'information (1) ensuite je réutilise cette information dans le calcul du pourcentage (2). 
+
+```{r}
+
+nb.indiv.strate<-maturite.dta %>% group_by(nom) %>% summarise(nb.individus.strate=n()) 
+
+maturite.dta %>% mutate(lt=10*floor(lt/100),classe_taille=paste(lt,'-',lt+10,sep='')) %>% #Passage des longueur en classe de taille de 10 cm ( lt=20)
+  group_by(nom,classe_taille) %>% summarise(nb.individus=n()) %>% 
+  inner_join(nb.indiv.strate,by='nom') %>% 
+  mutate(pct=round(100*nb.individus/nb.individus.strate,2)) %>% 
+  ggplot()+ geom_bar(aes(x=classe_taille,y=pct,fill=nom),stat='identity',position='dodge')
+
+```
+### Obtenir un tableau croisé
+
+On voudrait obtenir un tableau qui corresponde schématiquement au graphique précedent qui permette de compar
+
+
