@@ -13,6 +13,9 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
+knitr::opts_chunk$set(fig.align = "center", 
+               out.width = "90%",
+               fig.width = 6, fig.height = 5.5)
 ```
 
 # Chargement des librairies
@@ -368,7 +371,7 @@ case_when (condition1 alors (~) valeur1,
             )
 
 ```{r}
-taille_poids.dta %>% mutate(maturite=case_when(lt<460 ~ 'Immature',lt>=460 ~'Mature')) 
+head(taille_poids.dta %>% mutate(maturite=case_when(lt<460 ~ 'Immature',lt>=460 ~'Mature')) )
 ```
 
 Le camembert est un histogramme avec des coordonnées polaire. Donc pour faire un camembert, on commence par faire un histogramme et on rajoute la fonction   coord_polar("y",start=0)
@@ -397,8 +400,54 @@ taille_poids.dta %>% mutate(maturite=case_when(lt<460 ~ 'Immature',lt>=460 ~'Mat
 
 ```
 
+# Lire des fichiers 
+
+Dans les répertoires d"installation du package formationIMROP, il y a un répertoire extdata qui contient des fichiers que l'on va pouvoir lire. Des fichiers au format CSV (classiques) et une couche shapefile (shp et dbf associé)
+
+## Des fichiers de données csv
+
+```{r}
+
+repertoire.fichiers<-paste(path.package("formationIMROP", quiet = FALSE),'/extdata/',sep='')
+
+dir(repertoire.fichiers)
+
+rstudioapi::selectFile(path = repertoire.fichiers)
 
 
+```
+Pour lire un fichier csv nous utiliserons la fonction read.csv2 avec les 3 paramètres :
+
+* Le nom du fichier
+* Le séparateur de colonne - sep
+* Le séparateur de décimales - dec
+
+
+```{r}
+fichier=paste(repertoire.fichiers,'captures_pa.csv',sep='')
+
+data.pa<-read.csv2(file=fichier,sep=",") #on se rend compte que le séparateur de colonne n'est pas la virgule mais le point virgule
+head(data.pa)
+
+data.pa<-read.csv2(file=fichier,sep=";",dec=',') #Quand le séparateur de décimal est la virgule au lieu du point 
+head(data.pa)
+
+
+data.pa<-read.csv2(file=fichier,sep=";",dec='.') #la on a une bonne lecture
+
+head(data.pa)
+
+
+
+```
+
+
+
+
+## Des fichiers shapefile
+
+
+## Des fichiers Rdata
 
 
 
