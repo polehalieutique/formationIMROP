@@ -1,18 +1,23 @@
 Package: formationIMROP
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Provide material for training courses
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Jerome Guitton et Pablo Brosset
+Maintainer: Jerome Guitton  <jerome.guitton@institut-agro.fr>
+Description: This packages contains a set of data and vignettes that will support a traning courses dedicated to IMROP scientist. This courses aims to developp skill in using R for Fisheries analysis.
+License: GPL V3
 Encoding: UTF-8
 LazyData: true
 Depends: 
     R (>= 2.10)
 RoxygenNote: 7.2.3
-Suggests: 
+Imports: 
+    ggplot2,
+    sf,
+    FactoMineR,
+    factoextra,
     knitr,
+    kableExtra
+Suggests: 
     rmarkdown
 VignetteBuilder: knitr
