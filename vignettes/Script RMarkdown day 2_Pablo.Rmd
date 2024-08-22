@@ -32,7 +32,8 @@ library(knitr) # Package pour présenter des tableaux
 library(kableExtra) # Package pour présenter des tableaux
 library(sizeMat) # Package pour étudier la maturité
 library(formationIMROP) # Package spécifique à la formation
-
+library(MuMIn)
+library(mgcv)
 
 ```
 
@@ -51,7 +52,7 @@ Ici nous allons travailler avec un jeu de données qui contient des données d'a
 Une ACP se fait sur des variables quantitatives, donc la première étape est d'enlever les variables qualitatives, ici la zone et les stations
 
 ```{r}
-Data_Fish_PCA <- Fish_pelagic %>% select(-1, -2)
+Data_Fish_PCA <- Data_Fish %>% select(-1, -2)
 head(Data_Fish_PCA)
 ```
 
@@ -201,3 +202,92 @@ fviz_cluster(list(data = Data_Env_only, cluster = clusters), geom = "point",
 Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
 Mais contrairement aux variables biologiques, on voit qu'il y'a un groupe qui contient pratiquement exclusivement les stations du golfe du Lion et le 2 eme groupe les autres stations (Mer Catalane et Mer d'Alboran)
 (=> les conditions environnementales semblent être très différentre entre le Golfe du Lion et les deux autres zones).
+
+
+
+
+
+
+# Analyses multivariées basées sur des modèles
+
+Relie directement les données (en halieutique souvent des poissons) à nos données biologiques/environnementales en une analyse.
+Permet de mettre en évidence des liens statistiques.
+
+# Réaliser un modèle linéaire généralisé (GLM)
+
+Les GLM sont une extension des modèles linéaires classiques qui peuvent être utilisés lorsque les réponses ne sont pas de type numérique continues.
+
+Les GLM sont principalement utilisés dans deux situations :
+Lorsque les données sont de type comptage (nombre d’oeufs pondus, nombre de larve présentes etc..),
+Lorsque les données sont de type binaire (présence/absence, mort/vivant)
+
+Attention au choix du type de distribution et du lien associé (voir ppt) !
+
+## Réalisation du GLM
+
+```{r}
+glm_sardine <- glm(Abondance_Sardine ~ SST + Chla + Salinite + Zooplancton, family="poisson", data=Data_Fish)
+summary(glm_sardine)
+```
+
+Vous avez accès aux résultats du GLM avec le summary(). Vous voyez quelles sont les variables qui sont significativement corrélées à l'abondance des sardines. L'estimate vous donne le sens de la relation (positive ou négative).
+Maintenant vous pouvez améliorer le modèle en l'optimisant.
+
+```{r}
+library(MuMIn)
+options(na.action = "na.fail")
+dredge(glm_sardine)
+```
+
+Votre modèle optimal est celui qui à le plus petit AIC (et qui retiens le moins de variable si différents modèles ont des différences d'AIC < 2). L'AIC est le critère le plus courant pour choisir les modèles.
+
+```{r}
+glm_sardine <- glm(Abondance_Sardine ~  Chla + Zooplancton, family="poisson", data=Data_Fish)
+summary(glm_sardine)
+```
+
+Vous avez maintenant établi votre modèle optimal. 
+
+
+
+
+# Réaliser un modèle additif généralisé (GAM)
+
+Les Modèles Additifs Généralisés permettent de modéliser une variable à expliquer de façon non-linéaire.
+Comme pour le GLM, cela s’écrit Y ~ X, (famille de distribution, lien)
+
+## Réalisation du GAM
+
+```{r}
+gam_sardine <- gam(Abondance_Sardine ~ s(SST, k=3) + s(Chla, k=3) + s(Salinite, k=3) + s(Zooplancton, k=3),
+             data = Data_Fish, family = poisson(link="log"), method = "REML")
+summary(gam_sardine)
+plot(gam_sardine, page=1, se = TRUE, shade = TRUE)
+```
+
+Vous avez accès aux résultats du GAM avec le summary(). Vous voyez quelles sont les variables qui sont significativement corrélées à l'abondance des sardines. L'estimate vous donne le sens de la relation (positive ou négative). Le k=3 vous permet de limiter le type de relation à des relations de type U ou dôme pour éviter le surparamétrage.
+
+Vous avez aussi accès aux graphiques pour voir la forme des relations entre la variable réponse et chaque variable explicative.
+
+Maintenant vous pouvez améliorer le modèle en l'optimisant et refaire le nouveau modèle optimal.
+
+```{r}
+dredge(gam_sardine)
+
+gam_sardine <- gam(Abondance_Sardine ~ s(SST, k=3) + s(Chla, k=3)+ s(Zooplancton, k=3),
+                   data = Data_Fish, 
+                   family = poisson(link="log"), 
+                   method = "REML")
+summary(gam_sardine)
+```
+
+L'idée est aussi de voir si l'utilisation d'un GAM est interéssante versus un GLM.
+On va donc comparer les AIC
+
+```{r}
+AIC(glm_sardine,gam_sardine)
+```
+
+Ici on voit que l'AIC est plus petit pour le GAM et que la différence entre les deux est > 2 donc le GAM semble être mieux que le GLM.
+
+A vous de faire de même pour les autres espèces.
