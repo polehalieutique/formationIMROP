@@ -1,0 +1,44 @@
+---
+title: "Script RMarkdown day 3_Pablo"
+author: "Pablo Brosset"
+date: "2024-08-23"
+output:
+  pdf_document: default
+  html_document: default
+vignette: >
+  %\VignetteIndexEntry{jour1}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+```
+
+
+
+## Chargement des librairies
+
+```{r setup}
+library(dplyr) #Package de manipulation de données
+library(ggplot2) # Package pour faire des graphiques
+library(sf) # Package pour faire des cartes
+library(knitr) # Package pour présenter des tableaux
+library(kableExtra) # Package pour présenter des tableaux
+library(sizeMat) # Package pour étudier la maturité
+library(formationIMROP) # Package spécifique à la formation
+library(MuMIn) # Package pour sélection de modèle
+library(mgcv) #Package pour faire les GAM
+```
+
+
+## Chargement des données
+
+```{r}
+data("Data_Fish_rec.dta") # Vient du package formationIMROP
+```
