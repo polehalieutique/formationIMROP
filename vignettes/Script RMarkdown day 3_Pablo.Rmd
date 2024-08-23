@@ -42,8 +42,8 @@ library(car) # package pour vérifier la multicollinéarité entre variables exp
 ## Chargement des données
 
 ```{r}
-data("Data_Fish_rec.dta") # Vient du package formationIMROP
-Data_Fish_rec <- data("Data_Fish_rec.dta") # Vient du package formationIMROP
+data(Data_Fish_rec.dta) # Vient du package formationIMROP
+head(Data_Fish_rec.dta,n=10) #Affichage des n premières lignes du tableau 
 ```
 
 
@@ -52,7 +52,7 @@ Data_Fish_rec <- data("Data_Fish_rec.dta") # Vient du package formationIMROP
 ## Représenter graphiquement les données
 
 ```{r}
-Rec_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Recrue)) +
+Rec_temp <- ggplot(Data_Fish_rec.dta, aes(x = Annee, y = Recrue)) +
   geom_line(color = "blue") +      # Add a line
   geom_point(color = "blue", size = 3) + # Add points
   labs(title = "",
@@ -61,7 +61,7 @@ Rec_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Recrue)) +
   theme_minimal()
 Rec_temp
 
-SSB_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Biomasse.feconde)) +
+SSB_temp <- ggplot(Data_Fish_rec.dta, aes(x = Annee, y = Biomasse.feconde)) +
   geom_line(color = "blue") +      # Add a line
   geom_point(color = "blue", size = 3) + # Add points
   labs(title = "",
@@ -70,7 +70,7 @@ SSB_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Biomasse.feconde)) +
   theme_minimal()
 SSB_temp
 
-SST_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = SST)) +
+SST_temp <- ggplot(Data_Fish_rec.dta, aes(x = Annee, y = SST)) +
   geom_line(color = "blue") +      # Add a line
   geom_point(color = "blue", size = 3) + # Add points
   labs(title = "",
@@ -79,7 +79,7 @@ SST_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = SST)) +
   theme_minimal()
 SST_temp
 
-Phyto_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Phytoplancton)) +
+Phyto_temp <- ggplot(Data_Fish_rec.dta, aes(x = Annee, y = Phytoplancton)) +
   geom_line(color = "blue") +      # Add a line
   geom_point(color = "blue", size = 3) + # Add points
   labs(title = "",
@@ -88,7 +88,7 @@ Phyto_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Phytoplancton)) +
   theme_minimal()
 Phyto_temp
 
-Zoo_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Zooplancton)) +
+Zoo_temp <- ggplot(Data_Fish_rec.dta, aes(x = Annee, y = Zooplancton)) +
   geom_line(color = "blue") +      # Add a line
   geom_point(color = "blue", size = 3) + # Add points
   labs(title = "",
@@ -97,7 +97,7 @@ Zoo_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Zooplancton)) +
   theme_minimal()
 Zoo_temp
 
-WeMOi_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = WeMOi)) +
+WeMOi_temp <- ggplot(Data_Fish_rec.dta, aes(x = Annee, y = WeMOi)) +
   geom_line(color = "blue") +      # Add a line
   geom_point(color = "blue", size = 3) + # Add points
   labs(title = "",
@@ -114,13 +114,15 @@ ggarrange(Rec_temp, SSB_temp, SST_temp,
                            ncol = 3, nrow = 2)  # Arrange in 1 row, 2 columns
 ```
 
+Ici on voit que ggarrane() permet d'assembler différents graphiques dans une même figure.
+
 
 #  Faire un GAM pour étudier les liens potentiels entre l'environnement et le recrutement de l'anchois
 
 Vérifier s'il n'y a pas de multicolinéarité
 
 ```{r}
-model <- lm(Recrue ~ Biomasse.feconde + SST + Phytoplancton +Zooplancton + WeMOi, data = Data_Fish_rec)
+model <- lm(Recrue ~ Biomasse.feconde + SST + Phytoplancton +Zooplancton + WeMOi, data = Data_Fish_rec.dta)
 library(car)
 vif_values <- vif(model)
 vif_values
@@ -132,16 +134,16 @@ Pas de forte autocorrelation (car VIF tout le temps <5)
 ### Maintenant faire le GAM
 
 ```{r}
-gam_anchois_rec <- gam(Recrue ~ s(Biomasse.feconde,k=3) + s(SST,k=3)+s(Phytoplancton,k=3)+s(Zooplancton,k=3) + s(WeMOi,k=3), data = Data_Fish_rec,
+gam_anchois_rec <- gam(Recrue ~ s(Biomasse.feconde,k=3) + s(SST,k=3)+s(Phytoplancton,k=3)+s(Zooplancton,k=3) + s(WeMOi,k=3), data = Data_Fish_rec.dta,
                    family = Gamma(link = "identity"), 
                    method = "REML")
 summary(gam_anchois_rec)
 plot(gam_anchois_rec, page=1, se = TRUE, shade = TRUE)
 options(na.action = "na.fail")
-dredge(gam_anchois_rec)
+head(dredge(gam_anchois_rec),6)
 
 gam_anchois_rec2 <- gam(Recrue ~ s(Biomasse.feconde,k=3) +s(Zooplancton, k=3),
-                   data = Data_Fish_rec, 
+                   data = Data_Fish_rec.dta, 
                    family = Gamma(link = "identity"), 
                    method = "REML")
 summary(gam_anchois_rec2)
