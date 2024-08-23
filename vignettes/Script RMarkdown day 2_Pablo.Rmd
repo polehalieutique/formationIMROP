@@ -19,6 +19,8 @@ knitr::opts_chunk$set(
 
 ```
 
+
+
 ## Chargement des librairies
 
 ```{r setup}
@@ -32,9 +34,9 @@ library(knitr) # Package pour présenter des tableaux
 library(kableExtra) # Package pour présenter des tableaux
 library(sizeMat) # Package pour étudier la maturité
 library(formationIMROP) # Package spécifique à la formation
-library(MuMIn)
-library(mgcv)
-
+library(MuMIn) # Package pour sélection de modèle
+library(mgcv) #Package pour faire les GAM
+library(dendextend) #Package pour améliorer les dendrogrammes
 ```
 
 
@@ -43,6 +45,68 @@ library(mgcv)
 ```{r}
 data("Fish_pelagic.dta") # Vient du package formationIMROP
 ```
+
+
+# Réaliser un clustering pour là aussi voir les (di)similarités
+
+Le clustering permet d'associer sur la base de la similarité les stations sur la base de leurs critères biologiques (poissons) ou environnementaux. Il faut passer par une matrice de distance avant. 
+
+Clustering sur les données biologiques (poissons) avec deux types de graphiques dont un amélioré pour une visualisation plus facile :
+
+```{r}
+###### Maintenant faire du clustering, notamment avec k-means
+Data_Fish_only <- Data_Fish %>% select(3,4,5,6)
+
+# Calcul de la matrice de distance
+dist_matrix <- dist(Data_Fish_only, method = "euclidean")
+
+# Faire le clustering
+hclust_result <- hclust(dist_matrix, method = "ward.D2")
+
+# Graphique du dendrogramme
+plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", sub = "", cex = 0.9)
+
+### Deuxieme graphique pour faciliter la visualisation
+dend <- as.dendrogram(hclust_result)
+Zone_colors <- as.numeric(as.factor(Data_Fish$Zone))
+color_palette <- c("red", "green", "blue")  # Definir une palette couleur
+branch_colors <- color_palette[Zone_colors]
+labels_colors(dend) <- branch_colors[order.dendrogram(dend)]
+plot(dend, main = "Dendrogram avec branches colorées par zone")
+```
+
+Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
+Mais dans ces deux grands groupes on voit que toutes les stations des différentes zones semblent mélangées et qu'il les groupes sont donc très hétérogènes (=> les communautés de poissons semblent se ressembler entre les zones).
+
+On va maintenant faire la même chose sur les variables environnementales :
+
+
+```{r}
+Data_Env_only <- Data_Fish %>% select(7,8,9,10)
+
+# Calcul de la matrice de distance
+dist_matrix <- dist(Data_Env_only, method = "euclidean")
+
+# Faire le clustering
+hclust_result <- hclust(dist_matrix, method = "ward.D2") ### Il peut aussi y avoir d'autres méthodes.
+
+# Faire le graphique du dendrogramme
+plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", sub = "", cex = 0.9)
+
+### Deuxieme graphique pour faciliter la visualisation
+dend <- as.dendrogram(hclust_result)
+Zone_colors <- as.numeric(as.factor(Data_Fish$Zone))
+color_palette <- c("red", "green", "blue")  # Definir une palette couleur
+branch_colors <- color_palette[Zone_colors]
+labels_colors(dend) <- branch_colors[order.dendrogram(dend)]
+plot(dend, main = "Dendrogram avec branches colorées par zone")
+```
+
+Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
+Mais contrairement aux variables biologiques, on voit qu'il y'a un groupe qui contient pratiquement exclusivement les stations du golfe du Lion et le 2 eme groupe les autres stations (Mer Catalane et Mer d'Alboran)
+(=> les conditions environnementales semblent être très différentre entre le Golfe du Lion et les deux autres zones).
+
+
 
 
 # Réaliser une ACP (Analyse en Composante Principale)
@@ -70,8 +134,8 @@ Mais l'ACP permet aussi de représenter les stations et les zones dans l'espace 
 
 ```{r}
 fviz_pca_ind(res.pca,
-             geom.ind = "point", # show points only (nbut not "text")
-             col.ind = Data_Fish$Zone, # color by groups
+             geom.ind = "point", # que ne présetner que les points
+             col.ind = Data_Fish$Zone, # couleur par groupe
              palette = c("#00AFBB", "#E7B800", "#FC4E07"),
              addEllipses = FALSE, # Concentration ellipses
              legend.title = "Zone",
@@ -79,20 +143,17 @@ fviz_pca_ind(res.pca,
 )
 ```
 
-On voit que chaque couleur représente une zone, les stations du Golfe du Lion sont plutôt à droite du plot et la mer d'Alboran à Gauche, il semble y avoir des différences marquées entre ces zones, mais des différences de quoi ?
+On voit que chaque couleur représente une zone, les stations du Golfe du Lion sont plutôt à droite du plot et la mer d'Alboran à gauche, il semble y avoir des différences marquées entre ces zones, mais des différences de quoi ?
 
 On va maintenant faire un 3eme plot qui regroupe les deux types d'information que l'on a vu jusqu'à maintenant.
 
 ```{r}
 fviz_pca_biplot(res.pca, 
-                # Individuals
                 geom.ind = "point",
                 fill.ind = Data_Fish$Zone, col.ind = "black",
                 pointshape = 21, pointsize = 2,
                 palette = "jco",
                 addEllipses = FALSE,
-                # Variables
-                #alpha.var ="contrib", col.var = "contrib",
                 gradient.cols = "RdYlBu",
                 legend.title = list(fill = "Species")
 )
@@ -105,14 +166,11 @@ Dans une ACP, il n'y a pas forcément que les axes 1 et 2 qui sont importants à
 ```{r}
 ### Regarder sur les axes suivants :
 fviz_pca_biplot(res.pca, axes=2:3,
-                # Individuals
                 geom.ind = "point",
                 fill.ind = Data_Fish$Zone, col.ind = "black",
                 pointshape = 21, pointsize = 2,
                 palette = "jco",
                 addEllipses = FALSE,
-                # Variables
-                #alpha.var ="contrib", col.var = "contrib",
                 gradient.cols = "RdYlBu",
                 legend.title = list(fill = "Species")
 )
@@ -121,89 +179,11 @@ fviz_pca_biplot(res.pca, axes=2:3,
 Et enfin, un graphique pour regarder la variance expliquée par chaque axe.
 
 ```{r}
-### Percentage explained by each axis
+### Pourcentage expliqué par chaque axe
 eig.val <- get_eigenvalue(res.pca)
 eig.val
 fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 50))
 ```
-
-
-# Réaliser un clustering pour là aussi voir les (di)similarités
-
-Le clustering permet d'associer sur la base de la similarité les stations sur la base de leurs critères biologiques (poissons) ou environnementaux. Il faut passer par une matrice de distance avant 
-
-Clustering sur les données biologiques (poissons) :
-
-```{r}
-###### Maintenant faire du clustering, notamment avec k-means
-Data_Fish_only <- Data_Fish %>% select(3,4,5,6)
-
-# Compute the distance matrix
-dist_matrix <- dist(Data_Fish_only, method = "euclidean")
-
-# Perform hierarchical clustering
-hclust_result <- hclust(dist_matrix, method = "ward.D2")
-
-# Plot the dendrogram
-plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", sub = "", cex = 0.9)
-```
-
-Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
-Mais dans ces deux grands groupes on voit que toutes les stations des différentes zones semblent mélangées et qu'il les groupes sont donc très hétérogènes (=> les communautés de poissons semblent se ressembler entre les zones).
-
-```{r}
-# Cut the dendrogram to form clusters
-num_clusters <- 2  # Decide the number of clusters
-clusters <- cutree(hclust_result, k = num_clusters)
-
-# Add the cluster information to the data frame
-df_clustered <- Data_Fish_only
-df_clustered$cluster <- as.factor(clusters)
-
-# Visualize the clusters
-fviz_cluster(list(data = Data_Fish_only, cluster = clusters), geom = "point", 
-             ellipse.type = "convex", palette = "jco", 
-             ggtheme = theme_minimal(), 
-             main = "Hierarchical Clustering of Fish Dataset")
-
-```
-
-
-On va maintenant faire la même chose sur les variables environnementales :
-
-
-```{r}
-Data_Env_only <- Data_Fish %>% select(7,8,9,10)
-
-# Compute the distance matrix
-dist_matrix <- dist(Data_Env_only, method = "euclidean")
-
-# Perform hierarchical clustering
-hclust_result <- hclust(dist_matrix, method = "ward.D2") ### Il peut aussi y avoir d'autres méthodes.
-
-# Plot the dendrogram
-plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", sub = "", cex = 0.9)
-
-# Cut the dendrogram to form clusters
-num_clusters <- 2  # Decide the number of clusters
-clusters <- cutree(hclust_result, k = num_clusters)
-
-# Add the cluster information to the data frame
-df_clustered <- Data_Env_only
-df_clustered$cluster <- as.factor(clusters)
-
-# Visualize the clusters
-fviz_cluster(list(data = Data_Env_only, cluster = clusters), geom = "point", 
-             ellipse.type = "convex", palette = "jco", 
-             ggtheme = theme_minimal(), 
-             main = "Hierarchical Clustering of Environmental Dataset")
-```
-
-Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
-Mais contrairement aux variables biologiques, on voit qu'il y'a un groupe qui contient pratiquement exclusivement les stations du golfe du Lion et le 2 eme groupe les autres stations (Mer Catalane et Mer d'Alboran)
-(=> les conditions environnementales semblent être très différentre entre le Golfe du Lion et les deux autres zones).
-
-
 
 
 
