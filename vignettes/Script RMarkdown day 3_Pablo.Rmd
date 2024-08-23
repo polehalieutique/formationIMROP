@@ -51,7 +51,7 @@ data("Data_Fish_rec.dta") # Vient du package formationIMROP
 ## Représenter graphiquement les données
 
 ```{r}
-Rec_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Recrue)) +
+Rec_temp <- ggplot(Fish_recruitment, aes(x = Annee, y = Recrue)) +
   geom_line(color = "blue") +      # Add a line
   geom_point(color = "blue", size = 3) + # Add points
   labs(title = "",
