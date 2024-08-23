@@ -43,7 +43,7 @@ library(dendextend) #Package pour améliorer les dendrogrammes
 ## Chargement des données
 
 ```{r}
-data("Fish_pelagic.dta") # Vient du package formationIMROP
+data(Fish_pelagic.dta) # Vient du package formationIMROP
 ```
 
 
@@ -216,7 +216,7 @@ Maintenant vous pouvez améliorer le modèle en l'optimisant.
 ```{r}
 library(MuMIn)
 options(na.action = "na.fail")
-dredge(glm_sardine)
+head(dredge(glm_sardine),6)
 ```
 
 Votre modèle optimal est celui qui à le plus petit AIC (et qui retiens le moins de variable si différents modèles ont des différences d'AIC < 2). L'AIC est le critère le plus courant pour choisir les modèles.
@@ -252,7 +252,7 @@ Vous avez aussi accès aux graphiques pour voir la forme des relations entre la 
 Maintenant vous pouvez améliorer le modèle en l'optimisant et refaire le nouveau modèle optimal.
 
 ```{r}
-dredge(gam_sardine)
+head(dredge(gam_sardine),6)
 
 gam_sardine <- gam(Abondance_Sardine ~ s(SST, k=3) + s(Chla, k=3)+ s(Zooplancton, k=3),
                    data = Data_Fish, 
