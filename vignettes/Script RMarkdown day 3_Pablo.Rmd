@@ -27,6 +27,7 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(dplyr) #Package de manipulation de données
 library(ggplot2) # Package pour faire des graphiques
+library(ggpubr) # Ameliore ggplot graphiques
 library(sf) # Package pour faire des cartes
 library(knitr) # Package pour présenter des tableaux
 library(kableExtra) # Package pour présenter des tableaux
@@ -34,6 +35,7 @@ library(sizeMat) # Package pour étudier la maturité
 library(formationIMROP) # Package spécifique à la formation
 library(MuMIn) # Package pour sélection de modèle
 library(mgcv) #Package pour faire les GAM
+library(car) # package pour vérifier la multicollinéarité entre variables explicatives
 ```
 
 
@@ -42,3 +44,110 @@ library(mgcv) #Package pour faire les GAM
 ```{r}
 data("Data_Fish_rec.dta") # Vient du package formationIMROP
 ```
+
+
+# Ici on veut étudier la variabilité du recrutement en fonction de différents paramètres environnementaux
+
+## Représenter graphiquement les données
+
+```{r}
+Rec_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Recrue)) +
+  geom_line(color = "blue") +      # Add a line
+  geom_point(color = "blue", size = 3) + # Add points
+  labs(title = "",
+       x = "Annee",
+       y = "Recrutement") +
+  theme_minimal()
+Rec_temp
+
+SSB_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Biomasse.feconde)) +
+  geom_line(color = "blue") +      # Add a line
+  geom_point(color = "blue", size = 3) + # Add points
+  labs(title = "",
+       x = "Annee",
+       y = "Biomasse feconde") +
+  theme_minimal()
+SSB_temp
+
+SST_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = SST)) +
+  geom_line(color = "blue") +      # Add a line
+  geom_point(color = "blue", size = 3) + # Add points
+  labs(title = "",
+       x = "Annee",
+       y = "SST") +
+  theme_minimal()
+SST_temp
+
+Phyto_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Phytoplancton)) +
+  geom_line(color = "blue") +      # Add a line
+  geom_point(color = "blue", size = 3) + # Add points
+  labs(title = "",
+       x = "Annee",
+       y = "Phyto") +
+  theme_minimal()
+Phyto_temp
+
+Zoo_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = Zooplancton)) +
+  geom_line(color = "blue") +      # Add a line
+  geom_point(color = "blue", size = 3) + # Add points
+  labs(title = "",
+       x = "Annee",
+       y = "Zoo") +
+  theme_minimal()
+Zoo_temp
+
+WeMOi_temp <- ggplot(Data_Fish_rec, aes(x = Annee, y = WeMOi)) +
+  geom_line(color = "blue") +      # Add a line
+  geom_point(color = "blue", size = 3) + # Add points
+  labs(title = "",
+       x = "Annee",
+       y = "WeMOi") +
+  theme_minimal()
+WeMOi_temp
+
+
+# Combiner les graphiques
+ggarrange(Rec_temp, SSB_temp, SST_temp,
+          Phyto_temp, Zoo_temp, WeMOi_temp,
+                           labels = c("A", "B", "C", "D","E","F"), # Labels for each plot
+                           ncol = 3, nrow = 2)  # Arrange in 1 row, 2 columns
+```
+
+
+#  Faire un GAM pour étudier les liens potentiels entre l'environnement et le recrutement de l'anchois
+
+Vérifier s'il n'y a pas de multicolinéarité
+
+```{r}
+model <- lm(Recrue ~ Biomasse.feconde + SST + Phytoplancton +Zooplancton + WeMOi, data = Data_Fish_rec)
+library(car)
+vif_values <- vif(model)
+vif_values
+```
+
+Pas de forte autocorrelation (car VIF tout le temps <5)
+
+
+### Maintenant faire le GAM
+
+```{r}
+gam_anchois_rec <- gam(Recrue ~ s(Biomasse.feconde,k=3) + s(SST,k=3)+s(Phytoplancton,k=3)+s(Zooplancton,k=3) + s(WeMOi,k=3), data = Data_Fish_rec,
+                   family = Gamma(link = "identity"), 
+                   method = "REML")
+summary(gam_anchois_rec)
+plot(gam_anchois_rec, page=1, se = TRUE, shade = TRUE)
+options(na.action = "na.fail")
+dredge(gam_anchois_rec)
+
+gam_anchois_rec2 <- gam(Recrue ~ s(Biomasse.feconde,k=3) +s(Zooplancton, k=3),
+                   data = Data_Fish_rec, 
+                   family = Gamma(link = "identity"), 
+                   method = "REML")
+summary(gam_anchois_rec2)
+plot(gam_anchois_rec2, page=1, se = TRUE, shade = TRUE)
+
+AIC(gam_anchois_rec,gam_anchois_rec2)
+```
+
+On voit que deux variables explicatives sont significatives, la biomasse de reproducteur et le zooplancton.
+Le dredge a permit d'affiner la sélection des variables et l'on voit que l'AIC du modèleà deux variables explicatives est plus faible que celui du modèle complet (différence >2), donc le choix du modèle le plus parcimonieux est bien.
