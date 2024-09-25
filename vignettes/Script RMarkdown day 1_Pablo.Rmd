@@ -234,7 +234,7 @@ ggplot(proportion_mature,aes(x=classe_taille_debut)) +
 ```
 
 
-ou une autre façon de faire en se basant sur le packagesizeMat
+ou une autre façon de faire en se basant sur le package sizeMat
 
 ```{r}
 deca_mat <- sizeMat::gonad_mature(data = maturite.dta %>% filter(lt> 199),

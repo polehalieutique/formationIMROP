@@ -19,6 +19,8 @@ knitr::opts_chunk$set(
 
 ```
 
+
+
 ## Chargement des librairies
 
 ```{r setup}
@@ -32,16 +34,79 @@ library(knitr) # Package pour présenter des tableaux
 library(kableExtra) # Package pour présenter des tableaux
 library(sizeMat) # Package pour étudier la maturité
 library(formationIMROP) # Package spécifique à la formation
-
-
+library(MuMIn) # Package pour sélection de modèle
+library(mgcv) #Package pour faire les GAM
+library(dendextend) #Package pour améliorer les dendrogrammes
 ```
 
 
 ## Chargement des données
 
 ```{r}
-data("Fish_pelagic.dta") # Vient du package formationIMROP
+data(Fish_pelagic.dta) # Vient du package formationIMROP
 ```
+
+
+# Réaliser un clustering pour là aussi voir les (di)similarités
+
+Le clustering permet d'associer sur la base de la similarité les stations sur la base de leurs critères biologiques (poissons) ou environnementaux. Il faut passer par une matrice de distance avant. 
+
+Clustering sur les données biologiques (poissons) avec deux types de graphiques dont un amélioré pour une visualisation plus facile :
+
+```{r}
+###### Maintenant faire du clustering, notamment avec k-means
+Data_Fish_only <- Data_Fish %>% select(3,4,5,6)
+
+# Calcul de la matrice de distance
+dist_matrix <- dist(Data_Fish_only, method = "euclidean")
+
+# Faire le clustering
+hclust_result <- hclust(dist_matrix, method = "ward.D2")
+
+# Graphique du dendrogramme
+plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", sub = "", cex = 0.9)
+
+### Deuxieme graphique pour faciliter la visualisation
+dend <- as.dendrogram(hclust_result)
+Zone_colors <- as.numeric(as.factor(Data_Fish$Zone))
+color_palette <- c("red", "green", "blue")  # Definir une palette couleur
+branch_colors <- color_palette[Zone_colors]
+labels_colors(dend) <- branch_colors[order.dendrogram(dend)]
+plot(dend, main = "Dendrogram avec branches colorées par zone")
+```
+
+Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
+Mais dans ces deux grands groupes on voit que toutes les stations des différentes zones semblent mélangées et qu'il les groupes sont donc très hétérogènes (=> les communautés de poissons semblent se ressembler entre les zones).
+
+On va maintenant faire la même chose sur les variables environnementales :
+
+
+```{r}
+Data_Env_only <- Data_Fish %>% select(7,8,9,10)
+
+# Calcul de la matrice de distance
+dist_matrix <- dist(Data_Env_only, method = "euclidean")
+
+# Faire le clustering
+hclust_result <- hclust(dist_matrix, method = "ward.D2") ### Il peut aussi y avoir d'autres méthodes.
+
+# Faire le graphique du dendrogramme
+plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", sub = "", cex = 0.9)
+
+### Deuxieme graphique pour faciliter la visualisation
+dend <- as.dendrogram(hclust_result)
+Zone_colors <- as.numeric(as.factor(Data_Fish$Zone))
+color_palette <- c("red", "green", "blue")  # Definir une palette couleur
+branch_colors <- color_palette[Zone_colors]
+labels_colors(dend) <- branch_colors[order.dendrogram(dend)]
+plot(dend, main = "Dendrogram avec branches colorées par zone")
+```
+
+Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
+Mais contrairement aux variables biologiques, on voit qu'il y'a un groupe qui contient pratiquement exclusivement les stations du golfe du Lion et le 2 eme groupe les autres stations (Mer Catalane et Mer d'Alboran)
+(=> les conditions environnementales semblent être très différentre entre le Golfe du Lion et les deux autres zones).
+
+
 
 
 # Réaliser une ACP (Analyse en Composante Principale)
@@ -51,7 +116,7 @@ Ici nous allons travailler avec un jeu de données qui contient des données d'a
 Une ACP se fait sur des variables quantitatives, donc la première étape est d'enlever les variables qualitatives, ici la zone et les stations
 
 ```{r}
-Data_Fish_PCA <- Fish_pelagic %>% select(-1, -2)
+Data_Fish_PCA <- Data_Fish %>% select(-1, -2)
 head(Data_Fish_PCA)
 ```
 
@@ -69,8 +134,8 @@ Mais l'ACP permet aussi de représenter les stations et les zones dans l'espace 
 
 ```{r}
 fviz_pca_ind(res.pca,
-             geom.ind = "point", # show points only (nbut not "text")
-             col.ind = Data_Fish$Zone, # color by groups
+             geom.ind = "point", # que ne présetner que les points
+             col.ind = Data_Fish$Zone, # couleur par groupe
              palette = c("#00AFBB", "#E7B800", "#FC4E07"),
              addEllipses = FALSE, # Concentration ellipses
              legend.title = "Zone",
@@ -78,20 +143,17 @@ fviz_pca_ind(res.pca,
 )
 ```
 
-On voit que chaque couleur représente une zone, les stations du Golfe du Lion sont plutôt à droite du plot et la mer d'Alboran à Gauche, il semble y avoir des différences marquées entre ces zones, mais des différences de quoi ?
+On voit que chaque couleur représente une zone, les stations du Golfe du Lion sont plutôt à droite du plot et la mer d'Alboran à gauche, il semble y avoir des différences marquées entre ces zones, mais des différences de quoi ?
 
 On va maintenant faire un 3eme plot qui regroupe les deux types d'information que l'on a vu jusqu'à maintenant.
 
 ```{r}
 fviz_pca_biplot(res.pca, 
-                # Individuals
                 geom.ind = "point",
                 fill.ind = Data_Fish$Zone, col.ind = "black",
                 pointshape = 21, pointsize = 2,
                 palette = "jco",
                 addEllipses = FALSE,
-                # Variables
-                #alpha.var ="contrib", col.var = "contrib",
                 gradient.cols = "RdYlBu",
                 legend.title = list(fill = "Species")
 )
@@ -104,14 +166,11 @@ Dans une ACP, il n'y a pas forcément que les axes 1 et 2 qui sont importants à
 ```{r}
 ### Regarder sur les axes suivants :
 fviz_pca_biplot(res.pca, axes=2:3,
-                # Individuals
                 geom.ind = "point",
                 fill.ind = Data_Fish$Zone, col.ind = "black",
                 pointshape = 21, pointsize = 2,
                 palette = "jco",
                 addEllipses = FALSE,
-                # Variables
-                #alpha.var ="contrib", col.var = "contrib",
                 gradient.cols = "RdYlBu",
                 legend.title = list(fill = "Species")
 )
@@ -120,84 +179,95 @@ fviz_pca_biplot(res.pca, axes=2:3,
 Et enfin, un graphique pour regarder la variance expliquée par chaque axe.
 
 ```{r}
-### Percentage explained by each axis
+### Pourcentage expliqué par chaque axe
 eig.val <- get_eigenvalue(res.pca)
 eig.val
 fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 50))
 ```
 
 
-# Réaliser un clustering pour là aussi voir les (di)similarités
 
-Le clustering permet d'associer sur la base de la similarité les stations sur la base de leurs critères biologiques (poissons) ou environnementaux. Il faut passer par une matrice de distance avant 
 
-Clustering sur les données biologiques (poissons) :
+# Analyses multivariées basées sur des modèles
 
-```{r}
-###### Maintenant faire du clustering, notamment avec k-means
-Data_Fish_only <- Data_Fish %>% select(3,4,5,6)
+Relie directement les données (en halieutique souvent des poissons) à nos données biologiques/environnementales en une analyse.
+Permet de mettre en évidence des liens statistiques.
 
-# Compute the distance matrix
-dist_matrix <- dist(Data_Fish_only, method = "euclidean")
+# Réaliser un modèle linéaire généralisé (GLM)
 
-# Perform hierarchical clustering
-hclust_result <- hclust(dist_matrix, method = "ward.D2")
+Les GLM sont une extension des modèles linéaires classiques qui peuvent être utilisés lorsque les réponses ne sont pas de type numérique continues.
 
-# Plot the dendrogram
-plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", sub = "", cex = 0.9)
-```
+Les GLM sont principalement utilisés dans deux situations :
+Lorsque les données sont de type comptage (nombre d’oeufs pondus, nombre de larve présentes etc..),
+Lorsque les données sont de type binaire (présence/absence, mort/vivant)
 
-Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
-Mais dans ces deux grands groupes on voit que toutes les stations des différentes zones semblent mélangées et qu'il les groupes sont donc très hétérogènes (=> les communautés de poissons semblent se ressembler entre les zones).
+Attention au choix du type de distribution et du lien associé (voir ppt) !
+
+## Réalisation du GLM
 
 ```{r}
-# Cut the dendrogram to form clusters
-num_clusters <- 2  # Decide the number of clusters
-clusters <- cutree(hclust_result, k = num_clusters)
-
-# Add the cluster information to the data frame
-df_clustered <- Data_Fish_only
-df_clustered$cluster <- as.factor(clusters)
-
-# Visualize the clusters
-fviz_cluster(list(data = Data_Fish_only, cluster = clusters), geom = "point", 
-             ellipse.type = "convex", palette = "jco", 
-             ggtheme = theme_minimal(), 
-             main = "Hierarchical Clustering of Fish Dataset")
-
+glm_sardine <- glm(Abondance_Sardine ~ SST + Chla + Salinite + Zooplancton, family="poisson", data=Data_Fish)
+summary(glm_sardine)
 ```
 
-
-On va maintenant faire la même chose sur les variables environnementales :
-
+Vous avez accès aux résultats du GLM avec le summary(). Vous voyez quelles sont les variables qui sont significativement corrélées à l'abondance des sardines. L'estimate vous donne le sens de la relation (positive ou négative).
+Maintenant vous pouvez améliorer le modèle en l'optimisant.
 
 ```{r}
-Data_Env_only <- Data_Fish %>% select(7,8,9,10)
-
-# Compute the distance matrix
-dist_matrix <- dist(Data_Env_only, method = "euclidean")
-
-# Perform hierarchical clustering
-hclust_result <- hclust(dist_matrix, method = "ward.D2") ### Il peut aussi y avoir d'autres méthodes.
-
-# Plot the dendrogram
-plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", sub = "", cex = 0.9)
-
-# Cut the dendrogram to form clusters
-num_clusters <- 2  # Decide the number of clusters
-clusters <- cutree(hclust_result, k = num_clusters)
-
-# Add the cluster information to the data frame
-df_clustered <- Data_Env_only
-df_clustered$cluster <- as.factor(clusters)
-
-# Visualize the clusters
-fviz_cluster(list(data = Data_Env_only, cluster = clusters), geom = "point", 
-             ellipse.type = "convex", palette = "jco", 
-             ggtheme = theme_minimal(), 
-             main = "Hierarchical Clustering of Environmental Dataset")
+library(MuMIn)
+options(na.action = "na.fail")
+head(dredge(glm_sardine),6)
 ```
 
-Ici on voit qu'il y'a deux grands groupes. Donc on indique le nombre de clusters de 2.
-Mais contrairement aux variables biologiques, on voit qu'il y'a un groupe qui contient pratiquement exclusivement les stations du golfe du Lion et le 2 eme groupe les autres stations (Mer Catalane et Mer d'Alboran)
-(=> les conditions environnementales semblent être très différentre entre le Golfe du Lion et les deux autres zones).
+Votre modèle optimal est celui qui à le plus petit AIC (et qui retiens le moins de variable si différents modèles ont des différences d'AIC < 2). L'AIC est le critère le plus courant pour choisir les modèles.
+
+```{r}
+glm_sardine <- glm(Abondance_Sardine ~  Chla + Zooplancton, family="poisson", data=Data_Fish)
+summary(glm_sardine)
+```
+
+Vous avez maintenant établi votre modèle optimal. 
+
+
+
+
+# Réaliser un modèle additif généralisé (GAM)
+
+Les Modèles Additifs Généralisés permettent de modéliser une variable à expliquer de façon non-linéaire.
+Comme pour le GLM, cela s’écrit Y ~ X, (famille de distribution, lien)
+
+## Réalisation du GAM
+
+```{r}
+gam_sardine <- gam(Abondance_Sardine ~ s(SST, k=3) + s(Chla, k=3) + s(Salinite, k=3) + s(Zooplancton, k=3),
+             data = Data_Fish, family = poisson(link="log"), method = "REML")
+summary(gam_sardine)
+plot(gam_sardine, page=1, se = TRUE, shade = TRUE)
+```
+
+Vous avez accès aux résultats du GAM avec le summary(). Vous voyez quelles sont les variables qui sont significativement corrélées à l'abondance des sardines. L'estimate vous donne le sens de la relation (positive ou négative). Le k=3 vous permet de limiter le type de relation à des relations de type U ou dôme pour éviter le surparamétrage.
+
+Vous avez aussi accès aux graphiques pour voir la forme des relations entre la variable réponse et chaque variable explicative.
+
+Maintenant vous pouvez améliorer le modèle en l'optimisant et refaire le nouveau modèle optimal.
+
+```{r}
+head(dredge(gam_sardine),6)
+
+gam_sardine <- gam(Abondance_Sardine ~ s(SST, k=3) + s(Chla, k=3)+ s(Zooplancton, k=3),
+                   data = Data_Fish, 
+                   family = poisson(link="log"), 
+                   method = "REML")
+summary(gam_sardine)
+```
+
+L'idée est aussi de voir si l'utilisation d'un GAM est interéssante versus un GLM.
+On va donc comparer les AIC
+
+```{r}
+AIC(glm_sardine,gam_sardine)
+```
+
+Ici on voit que l'AIC est plus petit pour le GAM et que la différence entre les deux est > 2 donc le GAM semble être mieux que le GLM.
+
+A vous de faire de même pour les autres espèces.
