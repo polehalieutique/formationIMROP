@@ -117,7 +117,7 @@ ggarrange(Rec_temp, SSB_temp, SST_temp,
 Ici on voit que ggarrane() permet d'assembler différents graphiques dans une même figure.
 
 
-#  Faire un GAM pour étudier les liens potentiels entre l'environnement et le recrutement de l'anchois
+#  Faire un GLM puis un GAM pour étudier les liens potentiels entre l'environnement et le recrutement de l'anchois
 
 Vérifier s'il n'y a pas de multicolinéarité
 
@@ -130,10 +130,34 @@ vif_values
 
 Pas de forte autocorrelation (car VIF tout le temps <5)
 
-
-### Maintenant faire le GAM
+### Maintenant faire le GLM
 
 ```{r}
+## Avec un GLM
+
+glm_anchois_rec <- glm(Recrue ~ Biomasse.feconde + SST+Phytoplancton+Zooplancton + WeMOi, data = Data_Fish_rec,
+                       family = Gamma(link = "identity"))
+summary(glm_anchois_rec)
+plot(glm_anchois_rec, page=1, se = TRUE, shade = TRUE)
+options(na.action = "na.fail")
+dredge(glm_anchois_rec)
+
+glm_anchois_rec2 <- glm(Recrue ~ Biomasse.feconde +Zooplancton,
+                        data = Data_Fish_rec, 
+                        family = Gamma(link = "identity"))
+summary(glm_anchois_rec2)
+plot(glm_anchois_rec2, page=1, se = TRUE, shade = TRUE)
+
+AIC(glm_anchois_rec,glm_anchois_rec2)
+```
+
+
+### Maintenant faire le GAM
+Cela sert à voir si le GLM, qui ne permets que des relations linéaires, ne loupe pas des relations qui ne seraient pas linéaire entre le recrutement et la biomasse féconde + les variables environnementales
+
+```{r}
+#Faire la même chose avec un GAM
+
 gam_anchois_rec <- gam(Recrue ~ s(Biomasse.feconde,k=3) + s(SST,k=3)+s(Phytoplancton,k=3)+s(Zooplancton,k=3) + s(WeMOi,k=3), data = Data_Fish_rec.dta,
                    family = Gamma(link = "identity"), 
                    method = "REML")
