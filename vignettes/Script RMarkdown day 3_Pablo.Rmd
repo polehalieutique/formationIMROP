@@ -1,5 +1,5 @@
 ---
-title: "Script RMarkdown day 3_Pablo"
+title: "Day 3 Pablo"
 author: "Pablo Brosset"
 date: "2024-08-23"
 output:

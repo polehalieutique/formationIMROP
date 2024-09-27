@@ -23,7 +23,6 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 
-
 library(dplyr) #Package de manipulation de données
 library(ggplot2) # Package pour faire des graphiques
 library(sf) # Package pour faire des cartes
@@ -31,7 +30,6 @@ library(knitr) # Package pour présenter des tableaux
 library(kableExtra) # Package pour présenter des tableaux
 library(sizeMat) # Package pour étudier la maturité
 library(formationIMROP) # Package spécifique à la formation
-
 
 ```
 
@@ -146,7 +144,7 @@ taille_poids.dta <- taille_poids.dta %>%
 # Créer un graphique de l'indice de condition en fonction du port
 ggplot(taille_poids.dta, aes(x = nom, y = K_R, fill=nom)) +
   geom_boxplot() +
-  labs(title = "Indice de condition de Le Cren en fonction du port de débarque",
+  labs(title = "Indice de condition de Le Cren en fonction du port de débarquement",
        x = "Port",
        y = "Indice de condition de Le Cren (K_R)") +
   theme_minimal()
@@ -167,7 +165,8 @@ taille_poids.dta %>%
   theme_minimal()
 ```
 
-On va maintenant faire une anova pour comparer statistiquement la condition corporelle entre les ports de débarquement.
+On va maintenant faire une anova pour comparer statistiquement la condition corporelle entre les ports de débarquement, puis un test post-hoc (Tuckey).
+L'anova indique s'il y'a une différence significative et si il y'a une différence significative, le test post hoc nous indique où celle-ci se situe.
 
 ```{r}
 taille_poids.dta  %>% filter(K_R > 0.5 & K_R< 1.5)  %>% aov(K_R~ nom,data = .) %>% summary()
@@ -183,7 +182,7 @@ Il semblerait que les poissons débarqués à Saloum soit en moins bonne conditi
 
 Maintenant, nous allons étudier la maturité des individus et le calcul de la L50 (longueur à laquelle 50% des individus sont matures). Cette valeur est en effet parfois utilisée pour établir la taille minimale de capture.
 
-On doit d'abord transformer en mature/immature. On peut d'abord le faire basé sur la maturité.
+On doit d'abord transformer en mature/immature. On peut d'abord le faire en se basant sur la maturité.
 
 ```{r}
 # Mature ou pas mature

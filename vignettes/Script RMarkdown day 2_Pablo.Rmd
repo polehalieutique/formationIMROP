@@ -37,6 +37,8 @@ library(formationIMROP) # Package spécifique à la formation
 library(MuMIn) # Package pour sélection de modèle
 library(mgcv) #Package pour faire les GAM
 library(dendextend) #Package pour améliorer les dendrogrammes
+library(vegan) #Package pour faire les NMDS notamment
+library(indicspecies) #Package pour tester différences dans les anosim
 ```
 
 
@@ -46,6 +48,23 @@ library(dendextend) #Package pour améliorer les dendrogrammes
 data(Fish_pelagic.dta) # Vient du package formationIMROP
 ```
 
+# Analyses multivariées
+Les analyses multivariées signifient que nous avons deux variables ou plus.
+
+Nous sommes intéressés par les modèles communs ou les modes de variation entre ces multiples variables.
+
+Les données multivariées nécessitent des méthodes statistiques spéciales :
+
+ - Celle des méthodes descriptives (visant à structurer et résumer l'information). Au moment de décrire et d’explorer un jeu de données avec plusieurs variables, il peut être intéressant de visualiser la relation entre les variables (ex.: corrélations) et entre les observations (ex.: similarité entre nos sites d’études) dans un seul graphique.
+
+Exemple d'analyses : Clustering, ACP (analyse en composante principale), nMDS
+
+ - Celle des méthodes explicatives visant à expliquer une ou des variables dites « dépendantes » (variables à expliquer) par un ensemble de variables dites « indépendantes » (variables explicatives). On veut expliquer une réponse univariée en fonction d’un grand nombre de prédicteurs qui sont partiellement corrélés. Par exemple, la présence d’une espèce en fonction des conditions climatiques, la croissance d’arbres de différentes espèces sur un site en fonction de leurs traits fonctionnels, etc. 
+ 
+Exemple d'analyses: analyse de régression multiple (GLM, GAM)
+
+
+# Méthodes déscriptives
 
 # Réaliser un clustering pour là aussi voir les (di)similarités
 
@@ -111,6 +130,8 @@ Mais contrairement aux variables biologiques, on voit qu'il y'a un groupe qui co
 
 # Réaliser une ACP (Analyse en Composante Principale)
 
+Lorsque les variables représentent différentes unités, il est important de les normaliser afin d’obtenir des échelles comparables pour les analyses multivariées. Au lieu de faire plusieurs régressions, faites-en une seule avec toutes les réponses dans une ACP.
+
 Ici nous allons travailler avec un jeu de données qui contient des données d'abondance de différentes espèces de poissons pélagiques et les valeur des variables environnementales de l'endroit où ils ont été capturés (il y'a 50 stations). L'ACP va nous permettre d'essayer de voir s'il y'a des relations entre l'abondance des différentes espèces et les paramètres environnementaux.
 
 Une ACP se fait sur des variables quantitatives, donc la première étape est d'enlever les variables qualitatives, ici la zone et les stations
@@ -123,12 +144,14 @@ head(Data_Fish_PCA)
 Une fois que cette étape est faite, nous pouvons faire l'ACP à proprement parler
 
 ```{r}
-res.pca <- PCA(Data_Fish_PCA, graph = FALSE) ### Calcul de l'ACP
+res.pca <- PCA(Data_Fish_PCA,  scale.unit = TRUE, graph = FALSE) ### Calcul de l'ACP
 
 fviz_pca_var(res.pca, col.var = "black") ### Graphique de l'ACP pour voir les variables qui sont corrélées ou pas entre elles
 ```
 
-Ce graphique nous renseigne sur la force de la corrélation entre variables. Plus l'angle est réduit, plus la corrélation est forte (par contre un angle de 90° entre deux variables indique une absence de corrélation).
+L’ordination vise à produire dans un nombre de dimensions réduit (souvent 2) la représentation la plus fidèle possible de la variation entre les observations multivariées.
+
+Ce graphique nous renseigne donc sur la force de la corrélation entre variables. Plus l'angle est réduit, plus la corrélation est forte (par contre un angle de 90° entre deux variables indique une absence de corrélation).
 
 Mais l'ACP permet aussi de représenter les stations et les zones dans l'espace 2D. Ici un plot pour le faire.
 
@@ -184,6 +207,63 @@ eig.val <- get_eigenvalue(res.pca)
 eig.val
 fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 50))
 ```
+
+
+# NMDS
+
+Les NMDS trouvent une cartographie à faible dimension qui préserve le mieux possible l'ordre
+de classement des dissimilarités d'origine.
+
+Une solution avec un minimum de stress est recherchée ; une mesure de l'adéquation de la
+cartographie NMDS avec les données fit les dissimilarités d'origine.
+
+```{r}
+# Create a dissimilarity matrix (Bray-Curtis method)
+dist_matrix <- Data_Fish %>% select(-1, -2) %>% vegdist(method = "bray")
+
+# Perform NMDS with 2 dimensions
+nmds <- metaMDS(dist_matrix, k = 2, trymax = 100)
+sppscores(nmds) <- Data_Fish %>% select(-1, -2)
+
+# Check the result
+print(nmds)
+```
+
+Ici ce qui est important est de vérifier le stress de l'analyse. Pour un NMDS, si stress >0.3, alors on ne peut pas la considérer comme fiable et interprétable. Ici stress = 0.16, alors c'est bon.
+
+
+```{r}
+# Plot the NMDS
+ordiplot(nmds, type = "n")  # Create an empty plot
+points(nmds, display = "sites", col = "black", pch = 19)  # Add sites (black dots)
+points(nmds, display = "species", col = "red", pch = 3) # Add species (red cross)
+
+## Pour améliorer le graphique
+ordiplot(nmds,type="n")
+#ordihull(nmds,groups=Data_Fish$Zone,draw="polygon",col="grey90",label=F)
+orditorp(nmds,display="species",col="red",air=0.01)
+orditorp(nmds,display="sites",col=c(rep("green",18),rep("blue",18),rep("purple",14)),
+         air=0.01,cex=1.25)
+ordiellipse(nmds, display = "sites" ,groups=Data_Fish$Zone, col=c("green","purple","blue"),kind = "sd", label = T)
+```
+
+Ici on a le graphique qui montre les différentes espèces étudiées (leur abondance, croix rouges), ainsi que chaque point d'échantillonnage (points noirs). Pour regarder graphiquement s'il semble y avoir des différences par zone, on rajoute les ellipses.
+Ici on voit que les ellipses semblent ne se recouvrir que légerement, laissant penser que les zones présentent des abondances différentes des espèces étudiées. En dessous est un test statistique pour confirmer cela (ou pas).
+
+```{r}
+## Faire quelques stats là dessus
+ano <- anosim(dist_matrix, Data_Fish$Zone, distance = "bray", permutations = 9999)
+ano
+## Difference significative entre les zones !
+abund <- Data_Fish %>% select(-1, -2)
+inv <- multipatt(abund, Data_Fish$Zone, func = "r.g", control = how(nperm=9999))
+summary(inv)
+
+```
+
+L'anosim permet de déterminer qu'il y'a une différence significative entre les zone, mais où se situe cette différence.
+Dans summary(inv), on voit que les différences d'abondances des espèces étudiées sont significatives pour chaque comparaison de zone deux à deux.
+
 
 
 
