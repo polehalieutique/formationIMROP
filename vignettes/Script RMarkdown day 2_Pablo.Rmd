@@ -208,6 +208,17 @@ eig.val
 fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 50))
 ```
 
+On peut aussi aller plus loin que de l'exploration visuelle et regarder la contribution de chaque variable à la construction des différents axes
+
+```{r}
+### Pourcentage expliqué par chaque variable sur les différents axes
+var <- get_pca_var(res.pca)
+var$contrib
+```
+
+Plus la valeur est proche de 1, plus elle contribue à un axe.
+Si c'est proche de zéro, cela contribue peu à l'axe (= cela explique peu l'axe).
+
 
 # NMDS
 
