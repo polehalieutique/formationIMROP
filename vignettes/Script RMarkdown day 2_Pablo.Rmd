@@ -220,6 +220,24 @@ Plus la valeur est proche de 1, plus elle contribue à un axe.
 Si c'est proche de zéro, cela contribue peu à l'axe (= cela explique peu l'axe).
 
 
+Pour avoir le signe de la contribution (positif ou négatif)
+
+```{r}
+var$cor
+```
+
+
+A vous de faire une ACP sur le jeu de données Fish_estuaries pour répondre à la question suivante :
+Quelles sont les conditions environnementales qui expliquent l'abondance et la condition corporelle des 3 espèces estuariennes étudiées?
+
+
+```{r}
+data(Fish_estuaries.dta) # Vient du package formationIMROP
+```
+
+
+
+
 # NMDS
 
 Les NMDS trouvent une cartographie à faible dimension qui préserve le mieux possible l'ordre
