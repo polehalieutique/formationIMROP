@@ -30,7 +30,7 @@ library(knitr) # Package pour présenter des tableaux
 library(kableExtra) # Package pour présenter des tableaux
 library(sizeMat) # Package pour étudier la maturité
 library(formationIMROP) # Package spécifique à la formation
-
+library(AquaticLifeHistory) # Package pour les modèles de croissance
 ```
 
 
@@ -262,5 +262,37 @@ deca_mat$out %>% as_tibble() %>%
   geom_text(x = 250, y = 0.85, label = expression(L[50]~444))
 
 ```
+
+
+
+## Courbe de croissance
+
+En ichtyologie, la fonction de croissance de von Bertalanffy est un modèle mathématique permettant d'évaluer la taille d'un poisson suivant son âge. Elle s'appuie sur l'idée que la croissance est un processus asymptotique où la taille de l'organisme approche une limite supérieure avec le temps.
+
+Cette équation est utilisée en écologie et en gestion des pêches pour modéliser la longueur moyenne en fonction de l'âge chez les animaux (notamment des poissons et d'autres organismes marins). En ajustant les paramètres Linf, k, et L0 à des données empiriques, les scientifiques peuvent prédire la taille future des populations et mieux comprendre les dynamiques de croissance dans divers environnements. 
+
+```{r}
+data("growth_data")
+head(growth_data) 
+
+Estimate_Growth(data = growth_data)
+
+# Fitting specific models of your choice
+Estimate_Growth(data = growth_data, models = "VB")
+Estimate_Growth(data = growth_data, models = c("Log", "Gom"))
+
+results <- Estimate_Growth(data = growth_data, plots = FALSE) ### Stockage des résultats
+Length_at_age_estimates <- results$Estimates
+head(Length_at_age_estimates) ### Avoir une idée de la taille pour les différents âges
+
+```
+
+Linf est la longueur asymptotique, c'est-à-dire la longueur maximale que l'organisme peut atteindre.
+K est le coefficient de croissance qui détermine la rapidité avec laquelle l'organisme atteint Linf
+L0 est l'âge hypothétique auquel la longueur de l'organisme serait nulle (c'est souvent un ajustement pour tenir compte de la phase initiale de croissance).
+
+Le dernier tableau permet d'avoir une idée de la taille attendue pour un âge donné.
+
+
 
 Fin du jour 1
