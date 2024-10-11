@@ -200,7 +200,7 @@ fviz_pca_biplot(res.pca, axes=2:3,
 )
 ```
 
-Et enfin, un graphique pour regarder la variance expliquée par chaque axe.
+Pour savoir le nombre d'axe à regarder, un graphique pour regarder la variance expliquée par chaque axe.
 
 ```{r}
 ### Pourcentage expliqué par chaque axe
@@ -208,6 +208,9 @@ eig.val <- get_eigenvalue(res.pca)
 eig.val
 fviz_eig(res.pca, addlabels = TRUE, ylim = c(0, 50))
 ```
+
+Il semblerait que l'axe 1 explique la majorité de la variance, donc regarde l'axe 1 et 2 semble suffisant.
+Cela se confirme avec les valeurs d'eigen, qui montre que seul les 2 premiers axes sont au dessus de 1 (critère de Kaiser).
 
 On peut aussi aller plus loin que de l'exploration visuelle et regarder la contribution de chaque variable à la construction des différents axes
 
