@@ -39,6 +39,7 @@ library(mgcv) #Package pour faire les GAM
 library(dendextend) #Package pour améliorer les dendrogrammes
 library(vegan) #Package pour faire les NMDS notamment
 library(indicspecies) #Package pour tester différences dans les anosim
+library(corrplot) #Package pour visualiser les correlations 2 à 2 entre les variables
 ```
 
 
@@ -226,10 +227,9 @@ Pour avoir le signe de la contribution (positif ou négatif)
 var$cor
 ```
 
-
+Exercice :
 A vous de faire une ACP sur le jeu de données Fish_estuaries pour répondre à la question suivante :
 Quelles sont les conditions environnementales qui expliquent l'abondance et la condition corporelle des 3 espèces estuariennes étudiées?
-
 
 ```{r}
 data(Fish_estuaries.dta) # Vient du package formationIMROP
@@ -379,4 +379,20 @@ AIC(glm_sardine,gam_sardine)
 
 Ici on voit que l'AIC est plus petit pour le GAM et que la différence entre les deux est > 2 donc le GAM semble être mieux que le GLM.
 
+Exercice :
 A vous de faire de même pour les autres espèces.
+
+
+
+## Supplément sur l'étude des matrices de corrélation pour avoir une idées des variables potentiellement corrélées.
+
+Ici le but est de regarder graphiquement les corrélations des variables 2 à 2.
+
+```{r}
+M = cor(Data_Fish[,3:10]) ### On enlève les colonnes non quantitatives
+corrplot(M, method = 'number') ### Avoir les coefficients de corrélation
+corrplot(M, method = 'color', order = 'alphabet') ### Correlation à l'aide d'un code couleur
+corrplot(M) ### Correlation à l'aide d'un code couleur et de la taille d'un cercle
+corrplot.mixed(M) ### Toutes les informations sur un seul graphique
+corrplot(M,col=COL2('BrBG')) ### Pour changer la couleur
+```
