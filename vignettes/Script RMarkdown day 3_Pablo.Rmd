@@ -1,7 +1,7 @@
 ---
 title: "Day 3 Pablo"
 author: "Pablo Brosset"
-date: "2024-08-23"
+date: "2024-21-10"
 output:
   pdf_document: default
   html_document: default
@@ -135,7 +135,7 @@ Pas de forte autocorrelation (car VIF tout le temps <5)
 ```{r}
 ## Avec un GLM
 
-glm_anchois_rec <- glm(Recrue ~ Biomasse.feconde + SST+Phytoplancton+Zooplancton + WeMOi, data = Data_Fish_rec,
+glm_anchois_rec <- glm(Recrue ~ Biomasse.feconde + SST+Phytoplancton+Zooplancton + WeMOi, data = Data_Fish_rec.dta,
                        family = Gamma(link = "identity"))
 summary(glm_anchois_rec)
 plot(glm_anchois_rec, page=1, se = TRUE, shade = TRUE)
@@ -143,7 +143,7 @@ options(na.action = "na.fail")
 dredge(glm_anchois_rec)
 
 glm_anchois_rec2 <- glm(Recrue ~ Biomasse.feconde +Zooplancton,
-                        data = Data_Fish_rec, 
+                        data = Data_Fish_rec.dta, 
                         family = Gamma(link = "identity"))
 summary(glm_anchois_rec2)
 plot(glm_anchois_rec2, page=1, se = TRUE, shade = TRUE)
