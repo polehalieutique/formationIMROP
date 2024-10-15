@@ -46,6 +46,7 @@ library(corrplot) #Package pour visualiser les correlations 2 à 2 entre les var
 
 ```{r}
 data(Fish_pelagic.dta) # Vient du package formationIMROP
+head(Fish_pelagic.dta,n=10) #Affichage des n premières lignes du tableau 
 ```
 
 # Analyses multivariées
