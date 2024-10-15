@@ -465,6 +465,8 @@ Pour lire un fichier csv nous utiliserons la fonction read.csv2 avec les 3 param
 
 
 ```{r}
+repertoire.fichiers<-paste(path.package("formationIMROP", quiet = FALSE),'/extdata/',sep='')
+
 fichier=paste(repertoire.fichiers,'captures_pa.csv',sep='')
 
 data.pa<-read.csv2(file=fichier,sep=",") #on se rend compte que le séparateur de colonne n'est pas la virgule mais le point virgule

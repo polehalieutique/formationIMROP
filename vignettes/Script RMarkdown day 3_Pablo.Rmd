@@ -4,7 +4,7 @@ author: "Pablo Brosset"
 date: "2024-21-10"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{jour1}
+  %\VignetteIndexEntry{Day 3 Pablo}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
