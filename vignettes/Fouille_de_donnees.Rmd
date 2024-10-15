@@ -31,6 +31,9 @@ library(kableExtra) # Package pour présenter des tableaux
 
 library(formationIMROP) # Package spécifique à la formation
 
+#library(devtools)
+#install_github("polehalieutique/formationIMROP") # Package spécifique à la formation
+
 
 ```
 
@@ -76,10 +79,48 @@ innner_join() Permet de lier 2 data frame suur la base d'une ou plusieurs inform
 data("logbook.dta") # Données logbook pour Sardine et Sardinelles
 data("logbook.zr2n") # Réferentiel des codes espèces
 
+head(logbook.dta)
+logbook.zr2n
+
+```
+
+Calcul de la somme des captures déclarées par pays pour les sardinelles (pour les 15 pays les plus contributeurs)
+
+```{r}
+
+logbook.dta %>% filter(codesp==10119) %>% 
+  group_by(nation) %>% 
+  summarize(total=sum(poids)) %>%  
+  arrange(desc(total)) %>% 
+  top_n(15)->request1
+
+logbook.dta %>% filter(codesp==10119) %>% 
+  left_join(request1) %>% 
+  filter(is.na(total)) %>% 
+  mutate(nation="other") %>% 
+  group_by(nation) %>% 
+  summarize(total=sum(poids)) %>% 
+  bind_rows(request1)->request2
+
+  
+ggplot(request1)+geom_bar(aes(x=nation,y=total),stat='identity')+
+   coord_flip()
+
+
+ggplot(request1)+geom_bar(aes(x=reorder(nation,total),y=total),stat='identity')+
+   coord_flip()
+
+ggplot(request2)+geom_bar(aes(x=reorder(nation,total),y=total),stat='identity')+
+   coord_flip()
+
+
+
 ```
 
 
-Cacul de la somme des captures déclarées par espèces et par années
+
+
+Calcul de la somme des captures déclarées par espèces et par années
 
 ```{r}
 
@@ -351,8 +392,8 @@ maturite.dta %>% mutate(lt=10*floor(lt/100),classe_taille=paste(lt,'-',lt+10,sep
   arrange(lt) %>% #Permet d'ordonner les classes de taille
   mutate(pct=round(100*nb.individus/nb.individus.strate,2)) %>% #Et là on rajoute
   select(nom,classe_taille,pct,lt) %>% 
-  pivot_wider(names_from=nom,values_from=pct) %>% 
-  kbl() %>%  kable_paper(c("striped", "hover"))
+  pivot_wider(names_from=nom,values_from=pct) %>% # Le tableau croisé est là On ne cite ici que la champ dont les valeurs 
+  kbl() %>%  kable_paper(c("striped", "hover"))   #vont devenir des noms de colonnes (nom) et le champ qui contient les valeurs
 
 
 ```

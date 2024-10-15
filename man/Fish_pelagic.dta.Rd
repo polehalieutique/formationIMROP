@@ -5,7 +5,6 @@
 \description{Données d'abondance des poissons pélagiques et les variables environnementales associées}
 \usage{Fish_pelagic.dta}
 \format{Dataframe}
-}
 \details{
 %%  ~~ If necessary, more details than the __description__ above ~~
 }
