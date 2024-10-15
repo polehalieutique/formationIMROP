@@ -447,7 +447,7 @@ Dans les répertoires d"installation du package formationIMROP, il y a un réper
 
 ## Des fichiers de données csv
 
-```{r eval=false}
+```{r eval=FALSE}
 
 repertoire.fichiers<-paste(path.package("formationIMROP", quiet = FALSE),'/extdata/',sep='')
 
