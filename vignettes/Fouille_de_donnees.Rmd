@@ -28,7 +28,7 @@ library(ggplot2) # Package pour faire des graphiques
 library(sf) # Package pour faire des cartes
 library(knitr) # Package pour présenter des tableaux
 library(kableExtra) # Package pour présenter des tableaux
-
+library(tidyr)
 library(formationIMROP) # Package spécifique à la formation
 
 #library(devtools)
