@@ -351,9 +351,11 @@ Comme pour le GLM, cela s’écrit Y ~ X, (famille de distribution, lien)
 
 ```{r}
 gam_sardine <- gam(Abondance_Sardine ~ s(SST, k=3) + s(Chla, k=3) + s(Salinite, k=3) + s(Zooplancton, k=3),
-             data = Fish_pelagic.dta, family = poisson(link="log"), method = "REML")
+
+                   data = Fish_pelagic.dta, family = poisson(link="log"), method = "REML")
 summary(gam_sardine)
-plot(gam_sardine, page=1, se = TRUE, shade = TRUE)
+
+plot(gam_sardine) #, page=1, se = TRUE, shade = TRUE
 ```
 
 Vous avez accès aux résultats du GAM avec le summary(). Vous voyez quelles sont les variables qui sont significativement corrélées à l'abondance des sardines. L'estimate vous donne le sens de la relation (positive ou négative). Le k=3 vous permet de limiter le type de relation à des relations de type U ou dôme pour éviter le surparamétrage.
