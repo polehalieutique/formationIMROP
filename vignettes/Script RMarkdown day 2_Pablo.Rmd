@@ -74,7 +74,7 @@ Clustering sur les données biologiques (poissons) avec deux types de graphiques
 
 ```{r}
 ###### Maintenant faire du clustering, notamment avec k-means
-Data_Fish_only <- Data_Fish %>% select(3,4,5,6)
+Data_Fish_only <- Fish_pelagic.dta %>% select(3,4,5,6)
 
 # Calcul de la matrice de distance
 dist_matrix <- dist(Data_Fish_only, method = "euclidean")
@@ -87,7 +87,7 @@ plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", s
 
 ### Deuxieme graphique pour faciliter la visualisation
 dend <- as.dendrogram(hclust_result)
-Zone_colors <- as.numeric(as.factor(Data_Fish$Zone))
+Zone_colors <- as.numeric(as.factor(Fish_pelagic.dta$Zone))
 color_palette <- c("red", "green", "blue")  # Definir une palette couleur
 branch_colors <- color_palette[Zone_colors]
 labels_colors(dend) <- branch_colors[order.dendrogram(dend)]
@@ -101,7 +101,7 @@ On va maintenant faire la même chose sur les variables environnementales :
 
 
 ```{r}
-Data_Env_only <- Data_Fish %>% select(7,8,9,10)
+Data_Env_only <- Fish_pelagic.dta %>% select(7,8,9,10)
 
 # Calcul de la matrice de distance
 dist_matrix <- dist(Data_Env_only, method = "euclidean")
@@ -114,7 +114,7 @@ plot(hclust_result, main = "Dendrogram of Hierarchical Clustering", xlab = "", s
 
 ### Deuxieme graphique pour faciliter la visualisation
 dend <- as.dendrogram(hclust_result)
-Zone_colors <- as.numeric(as.factor(Data_Fish$Zone))
+Zone_colors <- as.numeric(as.factor(Fish_pelagic.dta$Zone))
 color_palette <- c("red", "green", "blue")  # Definir une palette couleur
 branch_colors <- color_palette[Zone_colors]
 labels_colors(dend) <- branch_colors[order.dendrogram(dend)]
@@ -137,7 +137,7 @@ Ici nous allons travailler avec un jeu de données qui contient des données d'a
 Une ACP se fait sur des variables quantitatives, donc la première étape est d'enlever les variables qualitatives, ici la zone et les stations
 
 ```{r}
-Data_Fish_PCA <- Data_Fish %>% select(-1, -2)
+Data_Fish_PCA <- Fish_pelagic.dta %>% select(-1, -2)
 head(Data_Fish_PCA)
 ```
 
@@ -158,7 +158,7 @@ Mais l'ACP permet aussi de représenter les stations et les zones dans l'espace 
 ```{r}
 fviz_pca_ind(res.pca,
              geom.ind = "point", # que ne présetner que les points
-             col.ind = Data_Fish$Zone, # couleur par groupe
+             col.ind = Fish_pelagic.dta$Zone, # couleur par groupe
              palette = c("#00AFBB", "#E7B800", "#FC4E07"),
              addEllipses = FALSE, # Concentration ellipses
              legend.title = "Zone",
@@ -173,7 +173,7 @@ On va maintenant faire un 3eme plot qui regroupe les deux types d'information qu
 ```{r}
 fviz_pca_biplot(res.pca, 
                 geom.ind = "point",
-                fill.ind = Data_Fish$Zone, col.ind = "black",
+                fill.ind = Fish_pelagic.dta$Zone, col.ind = "black",
                 pointshape = 21, pointsize = 2,
                 palette = "jco",
                 addEllipses = FALSE,
@@ -190,7 +190,7 @@ Dans une ACP, il n'y a pas forcément que les axes 1 et 2 qui sont importants à
 ### Regarder sur les axes suivants :
 fviz_pca_biplot(res.pca, axes=2:3,
                 geom.ind = "point",
-                fill.ind = Data_Fish$Zone, col.ind = "black",
+                fill.ind = Fish_pelagic.dta$Zone, col.ind = "black",
                 pointshape = 21, pointsize = 2,
                 palette = "jco",
                 addEllipses = FALSE,
@@ -250,11 +250,11 @@ cartographie NMDS avec les données fit les dissimilarités d'origine.
 
 ```{r}
 # Create a dissimilarity matrix (Bray-Curtis method)
-dist_matrix <- Data_Fish %>% select(-1, -2) %>% vegdist(method = "bray")
+dist_matrix <- Fish_pelagic.dta %>% select(-1, -2) %>% vegdist(method = "bray")
 
 # Perform NMDS with 2 dimensions
 nmds <- metaMDS(dist_matrix, k = 2, trymax = 100)
-sppscores(nmds) <- Data_Fish %>% select(-1, -2)
+sppscores(nmds) <- Fish_pelagic.dta %>% select(-1, -2)
 
 # Check the result
 print(nmds)
@@ -275,7 +275,7 @@ ordiplot(nmds,type="n")
 orditorp(nmds,display="species",col="red",air=0.01)
 orditorp(nmds,display="sites",col=c(rep("green",18),rep("blue",18),rep("purple",14)),
          air=0.01,cex=1.25)
-ordiellipse(nmds, display = "sites" ,groups=Data_Fish$Zone, col=c("green","purple","blue"),kind = "sd", label = T)
+ordiellipse(nmds, display = "sites" ,groups=Fish_pelagic.dta$Zone, col=c("green","purple","blue"),kind = "sd", label = T)
 ```
 
 Ici on a le graphique qui montre les différentes espèces étudiées (leur abondance, croix rouges), ainsi que chaque point d'échantillonnage (points noirs). Pour regarder graphiquement s'il semble y avoir des différences par zone, on rajoute les ellipses.
@@ -283,11 +283,11 @@ Ici on voit que les ellipses semblent ne se recouvrir que légerement, laissant 
 
 ```{r}
 ## Faire quelques stats là dessus
-ano <- anosim(dist_matrix, Data_Fish$Zone, distance = "bray", permutations = 9999)
+ano <- anosim(dist_matrix, Fish_pelagic.dta$Zone, distance = "bray", permutations = 9999)
 ano
 ## Difference significative entre les zones !
 abund <- Data_Fish %>% select(-1, -2)
-inv <- multipatt(abund, Data_Fish$Zone, func = "r.g", control = how(nperm=9999))
+inv <- multipatt(abund, Fish_pelagic.dta$Zone, func = "r.g", control = how(nperm=9999))
 summary(inv)
 
 ```
@@ -317,7 +317,7 @@ Attention au choix du type de distribution et du lien associé (voir ppt) !
 ## Réalisation du GLM
 
 ```{r}
-glm_sardine <- glm(Abondance_Sardine ~ SST + Chla + Salinite + Zooplancton, family="poisson", data=Data_Fish)
+glm_sardine <- glm(Abondance_Sardine ~ SST + Chla + Salinite + Zooplancton, family="poisson", data=Fish_pelagic.dta)
 summary(glm_sardine)
 ```
 
@@ -333,7 +333,7 @@ head(dredge(glm_sardine),6)
 Votre modèle optimal est celui qui à le plus petit AIC (et qui retiens le moins de variable si différents modèles ont des différences d'AIC < 2). L'AIC est le critère le plus courant pour choisir les modèles.
 
 ```{r}
-glm_sardine <- glm(Abondance_Sardine ~  Chla + Zooplancton, family="poisson", data=Data_Fish)
+glm_sardine <- glm(Abondance_Sardine ~  Chla + Zooplancton, family="poisson", data=Fish_pelagic.dta)
 summary(glm_sardine)
 ```
 
@@ -351,7 +351,7 @@ Comme pour le GLM, cela s’écrit Y ~ X, (famille de distribution, lien)
 
 ```{r}
 gam_sardine <- gam(Abondance_Sardine ~ s(SST, k=3) + s(Chla, k=3) + s(Salinite, k=3) + s(Zooplancton, k=3),
-             data = Data_Fish, family = poisson(link="log"), method = "REML")
+             data = Fish_pelagic.dta, family = poisson(link="log"), method = "REML")
 summary(gam_sardine)
 plot(gam_sardine, page=1, se = TRUE, shade = TRUE)
 ```
@@ -366,7 +366,7 @@ Maintenant vous pouvez améliorer le modèle en l'optimisant et refaire le nouve
 head(dredge(gam_sardine),6)
 
 gam_sardine <- gam(Abondance_Sardine ~ s(SST, k=3) + s(Chla, k=3)+ s(Zooplancton, k=3),
-                   data = Data_Fish, 
+                   data = Fish_pelagic.dta, 
                    family = poisson(link="log"), 
                    method = "REML")
 summary(gam_sardine)
@@ -391,7 +391,7 @@ A vous de faire de même pour les autres espèces.
 Ici le but est de regarder graphiquement les corrélations des variables 2 à 2.
 
 ```{r}
-M = cor(Data_Fish[,3:10]) ### On enlève les colonnes non quantitatives
+M = cor(Fish_pelagic.dta[,3:10]) ### On enlève les colonnes non quantitatives
 corrplot(M, method = 'number') ### Avoir les coefficients de corrélation
 corrplot(M, method = 'color', order = 'alphabet') ### Correlation à l'aide d'un code couleur
 corrplot(M) ### Correlation à l'aide d'un code couleur et de la taille d'un cercle
