@@ -3,12 +3,12 @@ title: "Day 2 Pablo"
 author: "Pablo Brosset"
 date: "2024-06-26"
 output:
-  pdf_document: default
-  html_document: default
+output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{jour1}
-  %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+  
 ---
 
 ```{r, include = FALSE}
