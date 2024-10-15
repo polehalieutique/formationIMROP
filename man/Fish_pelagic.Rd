@@ -1,9 +1,9 @@
-\name{Fish_pelagic}
-\alias{Fish_pelagic}
+\name{Fish_pelagic.dta}
 \docType{data}
+\alias{Fish_pelagic}
 \title{Données d'abondance des poissons pélagiques et les variables environnementales associées}
 \description{Données d'abondance des poissons pélagiques et les variables environnementales associées}
-\usage{data("Fish_pelagic")}
+\usage{Fish_pelagic.dta}
 \format{Dataframe}
 }
 \details{
