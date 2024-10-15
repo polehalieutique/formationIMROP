@@ -287,7 +287,7 @@ Ici on voit que les ellipses semblent ne se recouvrir que légerement, laissant 
 ano <- anosim(dist_matrix, Fish_pelagic.dta$Zone, distance = "bray", permutations = 9999)
 ano
 ## Difference significative entre les zones !
-abund <- Data_Fish %>% select(-1, -2)
+abund <- Fish_pelagic.dta %>% select(-1, -2)
 inv <- multipatt(abund, Fish_pelagic.dta$Zone, func = "r.g", control = how(nperm=9999))
 summary(inv)
 

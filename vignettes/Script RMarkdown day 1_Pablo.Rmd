@@ -22,7 +22,6 @@ knitr::opts_chunk$set(
 # Chargement des librairies
 
 ```{r setup}
-
 library(dplyr) #Package de manipulation de données
 library(ggplot2) # Package pour faire des graphiques
 library(sf) # Package pour faire des cartes
