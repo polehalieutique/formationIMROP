@@ -26,7 +26,6 @@ knitr::opts_chunk$set(
 ```{r setup}
 library("FactoMineR") ### Package pour manipuler ACP
 library("factoextra") ### Package pour graphique ACP
-
 library(dplyr) #Package de manipulation de données
 library(ggplot2) # Package pour faire des graphiques
 library(sf) # Package pour faire des cartes
@@ -235,7 +234,7 @@ A vous de faire une ACP sur le jeu de données Fish_estuaries pour répondre à 
 Quelles sont les conditions environnementales qui expliquent l'abondance et la condition corporelle des 3 espèces estuariennes étudiées?
 
 ```{r}
-data(Fish_estuaries.dta) # Vient du package formationIMROP
+data(Data_Fish_estuaries.dta) # Vient du package formationIMROP
 ```
 
 
