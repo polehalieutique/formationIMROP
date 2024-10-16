@@ -9,7 +9,7 @@ License: GPL V3
 Encoding: UTF-8
 LazyData: true
 Depends: 
-    R (>= 4.2.0)
+    R (>= 4.1.0)
 RoxygenNote: 7.2.3
 Imports: 
     ggplot2,
