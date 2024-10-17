@@ -80,7 +80,7 @@ data("logbook.dta") # Données logbook pour Sardine et Sardinelles
 data("logbook.zr2n") # Réferentiel des codes espèces
 
 head(logbook.dta)
-logbook.zr2n
+head(logbook.zr2n)
 
 ```
 
@@ -91,23 +91,22 @@ Calcul de la somme des captures déclarées par pays pour les sardinelles (pour 
 logbook.dta %>% filter(codesp==10119) %>% 
   group_by(nation) %>% 
   summarize(total=sum(poids)) %>%  
-  arrange(desc(total)) %>% 
-  top_n(15)->request1
+  slice_max(total,n=15) %>% mutate(premiers=1)->lespremiers
 
 logbook.dta %>% filter(codesp==10119) %>% 
-  left_join(request1) %>% 
-  filter(is.na(total)) %>% 
+  left_join(lespremiers) %>% 
+  filter(is.na(premiers)) %>% 
   mutate(nation="other") %>% 
   group_by(nation) %>% 
   summarize(total=sum(poids)) %>% 
-  bind_rows(request1)->request2
+  bind_rows(lespremiers)->request2
 
   
-ggplot(request1)+geom_bar(aes(x=nation,y=total),stat='identity')+
+ggplot(lespremiers)+geom_bar(aes(x=nation,y=total),stat='identity')+
    coord_flip()
 
 
-ggplot(request1)+geom_bar(aes(x=reorder(nation,total),y=total),stat='identity')+
+ggplot(lespremiers)+geom_bar(aes(x=reorder(nation,total),y=total),stat='identity')+
    coord_flip()
 
 ggplot(request2)+geom_bar(aes(x=reorder(nation,total),y=total),stat='identity')+
@@ -181,7 +180,8 @@ Je veux donc joindre les 2 tableaux quand le codesp correspond
 
 logbook.dta %>% 
   group_by(an,codesp) %>% summarise(total=sum(poids)) %>% 
-  inner_join(logbook.zr2n,by=c('codesp'))
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  select(an,codesp,codfao,nomespco,total)
 
 
 ```
@@ -239,7 +239,49 @@ logbook.dta %>%
 
 
 ```
+```{r}
 
+
+logbook.dta %>% 
+  group_by(nation) %>% summarise(total=sum(poids))  %>%
+  mutate(groupe_nation=nation) %>% slice_max(total,n=6) ->pays_plus
+
+logbook.dta %>% left_join(pays_plus) %>% 
+  mutate(groupe_nation=case_when(is.na(groupe_nation)~ 'Other',TRUE ~groupe_nation )) %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  group_by(groupe_nation,an) %>% summarise(total=sum(poids)) %>% 
+  ggplot()+
+  geom_histogram(aes(x=an,y=total,fill=groupe_nation),stat='identity')
+
+
+logbook.dta %>% 
+  group_by(codesp,nation) %>% summarise(total=sum(poids))  %>%
+  mutate(groupe_nation=nation) %>%  slice_max(total,n=8)  ->pays_plus
+
+graphe1<- logbook.dta %>% left_join(pays_plus) %>% 
+  mutate(groupe_nation=case_when(is.na(groupe_nation)~ 'Other',TRUE ~groupe_nation )) %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  group_by(groupe_nation,nomespco,an) %>% summarise(total=sum(poids)) %>% 
+  filter(nomespco=='SARDINE') %>% 
+  ggplot()+
+  geom_histogram(aes(x=an,y=total,fill=groupe_nation),stat='identity')+
+  ggtitle('Sardines')
+
+
+
+graphe2<- logbook.dta %>% left_join(pays_plus) %>% 
+  mutate(groupe_nation=case_when(is.na(groupe_nation)~ 'Other',TRUE ~groupe_nation )) %>% 
+  inner_join(logbook.zr2n,by=c('codesp')) %>% 
+  group_by(groupe_nation,nomespco,an) %>% summarise(total=sum(poids)) %>% 
+  filter(nomespco=='SARDINELLES') %>% 
+  ggplot()+
+  geom_histogram(aes(x=an,y=total,fill=groupe_nation),stat='identity')+
+  ggtitle('Sardinelles')
+
+
+ggarrange(graphe1,graphe2,ncol=1)
+
+```
 
 ```{r}
 
@@ -259,6 +301,8 @@ logbook.dta %>% filter(nation=='NLD') %>%
 
 ```
 
+
+
 ## Graphe ou carte, même principe
 
 Je veux la somme des captures par secteur et mettre cela sur une carte
@@ -267,16 +311,36 @@ Le dessin des secteur est dans l'objet logbook.zr4n (l'équivalent du shapefile)
 ```{r}
 data(logbook.zr4n)
 
+kbl(head(logbook.zr4n)) %>% kable_paper(c("striped", "hover"))  
+  
+
 
 ggplot(logbook.zr4n)+
   geom_sf()
 
+
+ggplot(logbook.zr4n)+
+  geom_sf(aes(fill=reg))
+
+```
+```{r}
+TOT<-logbook.dta %>% 
+  group_by(secteur) %>% summarise(total=sum(poids))
+
+kbl(head(TOT)) %>%  kable_styling()
+
+logbook.zr4n %>% 
+  inner_join(TOT,by='secteur') %>% 
+  ggplot()+
+  geom_sf(aes(fill=total))+
+  scale_fill_continuous( trans = "reverse")
 ```
 
 ```{r}
-
 TOT<-logbook.dta %>% 
   group_by(secteur,codesp) %>% summarise(total=sum(poids))
+
+kbl(head(TOT)) %>%  kable_styling()
 
 logbook.zr4n %>% 
   inner_join(TOT,by='secteur') %>% 
@@ -284,6 +348,10 @@ logbook.zr4n %>%
   geom_sf(aes(fill=total))+
   scale_fill_continuous( trans = "reverse")+
   facet_wrap(~codesp)
+```
+
+
+```{r}
 
 logbook.zr4n %>% 
   inner_join(TOT,by='secteur') %>% 
@@ -347,6 +415,9 @@ Utilisation de mutate pour faire des classes de taille. On cree une nouvelle col
 n() permet de compter le nombre de ligne (ou d'individus). 
 
 ```{r}
+data("maturite.dta")
+
+kbl(maturite.dta) %>% kable_styling()
 
 maturite.dta %>% mutate(lt=10*floor(lt/100),classe_taille=paste(lt,'-',lt+10,sep='')) %>% #Passage des longueur en classe de taille de 10 cm ( lt=20)
   group_by(nom,classe_taille) %>% summarise(nb_individu=n()) %>% 
@@ -392,7 +463,8 @@ maturite.dta %>% mutate(lt=10*floor(lt/100),classe_taille=paste(lt,'-',lt+10,sep
   arrange(lt) %>% #Permet d'ordonner les classes de taille
   mutate(pct=round(100*nb.individus/nb.individus.strate,2)) %>% #Et là on rajoute
   select(nom,classe_taille,pct,lt) %>% 
-  pivot_wider(names_from=nom,values_from=pct) %>% # Le tableau croisé est là On ne cite ici que la champ dont les valeurs 
+  pivot_wider(names_from=nom,values_from=pct) %>% # Le tableau croisé est là On ne cite ici que la 
+                                                  # champ dont les valeurs 
   kbl() %>%  kable_paper(c("striped", "hover"))   #vont devenir des noms de colonnes (nom) et le champ qui contient les valeurs
 
 
@@ -412,6 +484,8 @@ case_when (condition1 alors (~) valeur1,
             )
 
 ```{r}
+kable(taille_poids.dta) %>% kable_styling()
+
 head(taille_poids.dta %>% mutate(maturite=case_when(lt<460 ~ 'Immature',lt>=460 ~'Mature')) )
 ```
 
@@ -465,7 +539,7 @@ Pour lire un fichier csv nous utiliserons la fonction read.csv2 avec les 3 param
 
 
 ```{r}
-repertoire.fichiers<-paste(path.package("formationIMROP", quiet = FALSE),'/extdata/',sep='')
+repertoire.fichiers<-paste(path.package("formationIMROP", quiet = FALSE),'/inst/extdata/',sep='')
 
 fichier=paste(repertoire.fichiers,'captures_pa.csv',sep='')
 
@@ -488,11 +562,63 @@ head(data.pa)
 
 ## Des fichiers shapefile
 
+Les objets spatiaux sont gèrés par la librarie SF (Spatial Feature). On peut stocker un fichier spatial dans un objet sf et utiliser les fonctions classiques pour les objets spatiaux st_join (jointure spatiale) st_union (union d'objets spatiaux), st_intersects, 
+
+
+```{r}
+
+vms<-st_read(paste(path.package("formationIMROP", quiet = FALSE),'/inst/extdata/vms.shp',sep=''),crs=4326)
+
+data("logbook.zr4n")
+
+st_crs(logbook.zr4n)=4326
+
+ggplot(vms)+ geom_sf(data=rectangles,aes(fill=NULL))+
+    geom_sf(aes(color=as.factor(id_vessel)))
+
+zee<-st_as_sf(st_union(logbook.zr4n))
+
+ggplot(zee)+ geom_sf()
+
+
+vms %>% st_join(zee,left=FALSE) %>% 
+  ggplot()+geom_sf(aes(color=as.factor(id_vessel)))
+
+
+vms %>%  filter(id_vessel==12) %>% mutate(etat=case_when (average_sp<4 ~'Peche',TRUE ~'Non Pêche')) %>% st_join(zee,left=FALSE) %>% 
+  ggplot()+geom_sf(aes(color=etat))
+
+
+logbook.zr4n %>% st_join(vms,left=FALSE) %>% 
+  group_by(secteur) %>% summarise(nb_points=n()) %>% 
+  ggplot()+geom_sf(aes(fill=nb_points))+
+  scale_fill_continuous(trans='reverse')
+
+
+logbook.zr4n %>% st_join(vms,left=FALSE) %>% mutate(etat=case_when (average_sp<4 ~'Peche',TRUE ~'Non Pêche')) %>% 
+  filter(etat=='Peche') %>% 
+  group_by(secteur) %>% summarise(nb_points=n()) %>% 
+  ggplot()+geom_sf(aes(fill=nb_points))+
+  scale_fill_continuous(type='viridis')
+
+
+
+
+
+logbook.zr4n %>% st_join(vms,left=FALSE) %>% 
+  group_by(secteur,id_vessel) %>% summarise(nb_points=n()) %>% 
+  ggplot()+geom_sf(aes(fill=nb_points))+
+  scale_fill_continuous(trans='reverse')+
+  facet_wrap(~id_vessel)
+
+
+
+```
 
 
 
 
 ## Des fichiers Rdata
 
-
+.
 
