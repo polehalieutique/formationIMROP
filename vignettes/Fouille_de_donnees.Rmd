@@ -38,7 +38,7 @@ library(formationIMROP) # Package spécifique à la formation
 ```
 
 
-# Fouille de données maturité
+# Manipulation des tableaux
 
 ## Affichage d'un tableau
 
