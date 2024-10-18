@@ -79,8 +79,8 @@ innner_join() Permet de lier 2 data frame suur la base d'une ou plusieurs inform
 data("logbook.dta") # Données logbook pour Sardine et Sardinelles
 data("logbook.zr2n") # Réferentiel des codes espèces
 
-head(logbook.dta)
-head(logbook.zr2n)
+kbl(head(logbook.dta)) %>% kable_styling()
+kbl(head(logbook.zr2n)) %>% kable_styling()
 
 ```
 
